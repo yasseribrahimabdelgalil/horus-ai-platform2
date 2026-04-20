@@ -1,5 +1,6 @@
 import { createBrowserRouter, RouterProvider, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { LanguageProvider } from './contexts/LanguageContext';
+import { AdminProvider } from './contexts/AdminContext';
 import { Navbar } from './components/layout/Navbar';
 import { Footer } from './components/layout/Footer';
 import { Home } from './pages/Home';
@@ -163,7 +164,9 @@ const router = createBrowserRouter([
 export function AppRouter() {
   return (
     <LanguageProvider>
-      <RouterProvider router={router} />
+      <AdminProvider>
+        <RouterProvider router={router} />
+      </AdminProvider>
     </LanguageProvider>
   );
 }
