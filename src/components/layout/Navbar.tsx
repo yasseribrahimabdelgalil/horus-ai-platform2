@@ -10,9 +10,10 @@ interface NavbarProps {
 
 const NAV_ITEMS = [
   { key: 'nav.home', page: 'home' },
+  { key: 'nav.companies', page: 'companies' },
   { key: 'nav.individuals', page: 'individuals' },
   { key: 'nav.bloggers', page: 'bloggers' },
-  { key: 'nav.sellers', page: 'sellers' },
+  { key: 'nav.sellers', page: 'online-sellers' },
   { key: 'nav.pricing', page: 'pricing' },
   { key: 'nav.blog', page: 'blog' },
   { key: 'nav.contact', page: 'contact' },
@@ -97,7 +98,7 @@ export function Navbar({ onNavigate, currentPage }: NavbarProps) {
 
             {/* Help Center */}
             <button 
-              onClick={() => onNavigate('help')}
+              onClick={() => onNavigate('help-center')}
               className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-50 text-blue-600 text-sm font-medium hover:bg-blue-100 transition-colors"
             >
               <HelpCircle className="w-4 h-4" />

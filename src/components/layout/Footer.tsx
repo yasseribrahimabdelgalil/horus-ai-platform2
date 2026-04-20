@@ -20,14 +20,14 @@ export function Footer({ onNavigate }: FooterProps) {
     { label: t('footer.about'), page: 'contact' },
     { label: t('footer.careers'), page: 'contact' },
     { label: t('nav.contact'), page: 'contact' },
-    { label: t('nav.help'), page: 'help' },
+    { label: t('nav.help'), page: 'help-center' },
   ];
 
   const solutionLinks = [
     { label: t('nav.companies'), page: 'companies' },
     { label: t('nav.individuals'), page: 'individuals' },
     { label: t('nav.bloggers'), page: 'bloggers' },
-    { label: t('nav.sellers'), page: 'sellers' },
+    { label: t('nav.sellers'), page: 'online-sellers' },
   ];
 
   return (

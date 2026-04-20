@@ -3,7 +3,7 @@ export type Lang = 'ar' | 'en';
 export const t: Record<string, Record<Lang, string>> = {
   // Navbar
   'nav.home': { ar: 'الرئيسية', en: 'Home' },
-  'nav.companies': { ar: 'الشركات', en: 'Companies' },
+  'nav.companies': { ar: 'للشركات', en: 'For Companies' },
   'nav.individuals': { ar: 'الأفراد', en: 'Individuals' },
   'nav.bloggers': { ar: 'المدونون', en: 'Bloggers' },
   'nav.sellers': { ar: 'البائعون', en: 'Online Sellers' },
