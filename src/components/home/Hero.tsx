@@ -297,7 +297,7 @@ export function Hero({ onNavigate }: HeroProps) {
       icon: ShoppingCart, 
       title: isRTL ? 'تجار أونلاين' : 'Online Sellers',
       desc: isRTL ? 'زيادة المبيعات بقرارات ذكية' : 'Boost sales with smart decisions',
-      page: 'sellers',
+      page: 'online-sellers',
       color: 'amber'
     },
   ];
