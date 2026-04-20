@@ -1,44 +1,70 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { 
   Zap, ChevronLeft, ChevronRight, Eye, EyeOff, Save, Upload, RotateCcw, 
   History, Copy, Trash2, Plus, GripVertical, Settings, Palette, Type, 
-  Layout, BarChart3, FileText, MessageSquare, Home, Navigation, 
-  Image, Layers, Box, PanelLeft, Sparkles, Monitor, Tablet, Smartphone,
-  ChevronDown, ChevronUp, Check, X, RefreshCw, Camera, Clock, Edit3,
-  AlignLeft, AlignCenter, AlignRight, Bold, Sun, Moon, Maximize2,
-  Grid3X3, Table, PieChart, TrendingUp, Activity
+  Layout, BarChart3, FileText, MessageSquare, Navigation, 
+  Image, Layers, Box, Sparkles, Monitor, Tablet, Smartphone,
+  ChevronDown, ChevronUp, Check, X, RefreshCw, Clock,
+  Users, Shield, CreditCard, Globe, Mail, Bell, Search,
+  Star, StarOff, Download, UploadCloud, AlertTriangle, Info,
+  Lock, Unlock, ExternalLink, Tag, DollarSign, FileCode,
+  Megaphone, Database, Activity, Archive, Link, Hash, Briefcase,
+  Building2, User, HelpCircle, BookOpen, Scale, Folder,
+  PieChart, TrendingUp, Table, Grid3X3, ToggleLeft, ToggleRight
 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
-import { useAdmin, WidgetConfig, ReportBlockConfig, SectionConfig } from '../contexts/AdminContext';
+import { 
+  useAdmin, 
+  WidgetConfig, 
+  ReportBlockConfig, 
+  SectionConfig,
+  TeamMember,
+  Role,
+  FormSubmission,
+  TrashItem,
+  PolicyPage,
+  PricingPlan,
+  BlockPreset
+} from '../contexts/AdminContext';
 
 interface AdminProps {
   onNavigate: (page: string) => void;
 }
 
-type EditorTab = 'pages' | 'dashboard' | 'reports' | 'ai-chat' | 'global' | 'snapshots';
-type PageEditorSection = 'navbar' | 'hero' | 'sections' | 'style';
+type MainTab = 
+  | 'overview' | 'pages' | 'dashboard' | 'reports' | 'ai-chat' 
+  | 'brand' | 'content' | 'navbar-footer' | 'pricing' | 'forms'
+  | 'seo' | 'media' | 'visibility' | 'team' | 'policies'
+  | 'submissions' | 'redirects' | 'presets' | 'snapshots' | 'trash'
+  | 'settings' | 'activity';
 
-// Reusable Components
+// ============================================================================
+// REUSABLE COMPONENTS
+// ============================================================================
+
 function ToggleRow({ 
   label, 
   labelAr, 
   checked, 
-  onChange 
+  onChange,
+  disabled = false
 }: { 
   label: string; 
   labelAr: string; 
   checked: boolean; 
   onChange: (checked: boolean) => void;
+  disabled?: boolean;
 }) {
   const { isRTL } = useLanguage();
   return (
-    <div className="flex items-center justify-between py-2 px-3 bg-slate-800/50 rounded-lg">
+    <div className={`flex items-center justify-between py-2 px-3 bg-slate-800/50 rounded-lg ${disabled ? 'opacity-50' : ''}`}>
       <span className="text-sm text-slate-300">{isRTL ? labelAr : label}</span>
       <button
-        onClick={() => onChange(!checked)}
+        onClick={() => !disabled && onChange(!checked)}
+        disabled={disabled}
         className={`w-10 h-5 rounded-full transition-colors relative ${
           checked ? 'bg-blue-500' : 'bg-slate-600'
-        }`}
+        } ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}
       >
         <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${
           checked ? 'translate-x-5' : 'translate-x-0.5'
@@ -55,13 +81,15 @@ function InputField({
   onChange,
   type = 'text',
   placeholder,
+  disabled = false,
 }: {
   label: string;
   labelAr: string;
   value: string;
   onChange: (value: string) => void;
-  type?: 'text' | 'number' | 'color';
+  type?: 'text' | 'number' | 'color' | 'email' | 'url';
   placeholder?: string;
+  disabled?: boolean;
 }) {
   const { isRTL } = useLanguage();
   return (
@@ -72,7 +100,35 @@ function InputField({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500"
+        disabled={disabled}
+        className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 disabled:opacity-50"
+      />
+    </div>
+  );
+}
+
+function TextareaField({
+  label,
+  labelAr,
+  value,
+  onChange,
+  rows = 3,
+}: {
+  label: string;
+  labelAr: string;
+  value: string;
+  onChange: (value: string) => void;
+  rows?: number;
+}) {
+  const { isRTL } = useLanguage();
+  return (
+    <div className="space-y-1.5">
+      <label className="text-xs text-slate-400 font-medium">{isRTL ? labelAr : label}</label>
+      <textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        rows={rows}
+        className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 resize-none"
       />
     </div>
   );
@@ -143,57 +199,20 @@ function ColorPicker({
   );
 }
 
-function SliderField({
-  label,
-  labelAr,
-  value,
-  onChange,
-  min = 0,
-  max = 100,
-  step = 1,
-  unit = '',
-}: {
-  label: string;
-  labelAr: string;
-  value: number;
-  onChange: (value: number) => void;
-  min?: number;
-  max?: number;
-  step?: number;
-  unit?: string;
-}) {
-  const { isRTL } = useLanguage();
-  return (
-    <div className="space-y-1.5">
-      <div className="flex items-center justify-between">
-        <label className="text-xs text-slate-400 font-medium">{isRTL ? labelAr : label}</label>
-        <span className="text-xs text-slate-500">{value}{unit}</span>
-      </div>
-      <input
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full h-1.5 bg-slate-700 rounded-full appearance-none cursor-pointer accent-blue-500"
-      />
-    </div>
-  );
-}
-
 function AccordionSection({
   title,
   titleAr,
   icon: Icon,
   children,
   defaultOpen = false,
+  badge,
 }: {
   title: string;
   titleAr: string;
   icon: React.ElementType;
   children: React.ReactNode;
   defaultOpen?: boolean;
+  badge?: string;
 }) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const { isRTL } = useLanguage();
@@ -207,6 +226,9 @@ function AccordionSection({
         <div className="flex items-center gap-2">
           <Icon className="w-4 h-4 text-blue-400" />
           <span className="text-sm font-medium text-white">{isRTL ? titleAr : title}</span>
+          {badge && (
+            <span className="px-1.5 py-0.5 bg-blue-500/20 text-blue-400 text-xs rounded-full">{badge}</span>
+          )}
         </div>
         {isOpen ? (
           <ChevronUp className="w-4 h-4 text-slate-400" />
@@ -291,14 +313,87 @@ function DraggableItem({
   );
 }
 
+function StatusBadge({ status }: { status: string }) {
+  const colors: Record<string, string> = {
+    active: 'bg-green-500/20 text-green-400',
+    pending: 'bg-yellow-500/20 text-yellow-400',
+    suspended: 'bg-red-500/20 text-red-400',
+    new: 'bg-blue-500/20 text-blue-400',
+    in_progress: 'bg-amber-500/20 text-amber-400',
+    resolved: 'bg-green-500/20 text-green-400',
+    draft: 'bg-slate-500/20 text-slate-400',
+    published: 'bg-green-500/20 text-green-400',
+    hidden: 'bg-slate-500/20 text-slate-400',
+    maintenance: 'bg-orange-500/20 text-orange-400',
+  };
+  return (
+    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${colors[status] || 'bg-slate-500/20 text-slate-400'}`}>
+      {status}
+    </span>
+  );
+}
+
+function ConfirmModal({
+  title,
+  message,
+  onConfirm,
+  onCancel,
+  confirmLabel = 'Confirm',
+  danger = false,
+}: {
+  title: string;
+  message: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+  confirmLabel?: string;
+  danger?: boolean;
+}) {
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+      <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl">
+        <h3 className="text-lg font-semibold text-white mb-2">{title}</h3>
+        <p className="text-sm text-slate-400 mb-6">{message}</p>
+        <div className="flex justify-end gap-3">
+          <button
+            onClick={onCancel}
+            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-sm text-white transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className={`px-4 py-2 rounded-lg text-sm text-white transition-colors ${
+              danger 
+                ? 'bg-red-500 hover:bg-red-600' 
+                : 'bg-blue-500 hover:bg-blue-600'
+            }`}
+          >
+            {confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// MAIN ADMIN COMPONENT
+// ============================================================================
+
 export function Admin({ onNavigate }: AdminProps) {
   const { isRTL } = useLanguage();
   const {
     draftConfig,
     publishedConfig,
     snapshots,
+    trash,
+    submissions,
+    favorites,
+    activityLog,
     isPreviewMode,
+    previewDevice,
     hasUnsavedChanges,
+    searchQuery,
     updateDraft,
     saveDraft,
     publishChanges,
@@ -313,64 +408,193 @@ export function Admin({ onNavigate }: AdminProps) {
     revertToSnapshot,
     deleteSnapshot,
     renameSnapshot,
+    moveToTrash,
+    restoreFromTrash,
+    permanentDelete,
+    emptyTrash,
+    inviteTeamMember,
+    removeTeamMember,
+    updateMemberRole,
+    suspendMember,
+    reactivateMember,
+    addFavorite,
+    removeFavorite,
+    updateSubmissionStatus,
+    setSearchQuery,
+    searchResults,
     setPreviewMode,
+    setPreviewDevice,
+    exportConfig,
+    importConfig,
+    logActivity,
   } = useAdmin();
 
   // UI State
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [activeTab, setActiveTab] = useState<EditorTab>('pages');
+  const [activeTab, setActiveTab] = useState<MainTab>('overview');
   const [activePage, setActivePage] = useState('home');
-  const [activePageSection, setActivePageSection] = useState<PageEditorSection>('navbar');
-  const [previewDevice, setPreviewDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   const [snapshotName, setSnapshotName] = useState('');
   const [showPublishConfirm, setShowPublishConfirm] = useState(false);
   const [showRestoreConfirm, setShowRestoreConfirm] = useState<string | null>(null);
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteRole, setInviteRole] = useState<Role>('editor');
+  const [showUnsavedWarning, setShowUnsavedWarning] = useState(false);
+
+  // Warn on unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
 
   // Handlers
   const handlePublish = useCallback(() => {
     publishChanges();
+    logActivity('publish', 'all', 'Published all changes');
     setShowPublishConfirm(false);
-  }, [publishChanges]);
+  }, [publishChanges, logActivity]);
 
   const handleCreateSnapshot = useCallback(() => {
     if (snapshotName.trim()) {
       createSnapshot(snapshotName.trim());
+      logActivity('snapshot', snapshotName.trim(), 'Created snapshot');
       setSnapshotName('');
     }
-  }, [createSnapshot, snapshotName]);
+  }, [createSnapshot, snapshotName, logActivity]);
 
   const handleRestore = useCallback((type: string) => {
     switch (type) {
       case 'navbar':
         restoreComponent('navbar');
+        logActivity('restore', 'navbar', 'Restored navbar');
         break;
       case 'hero':
         restoreComponent('hero');
+        logActivity('restore', 'hero', 'Restored hero');
+        break;
+      case 'footer':
+        restoreComponent('footer');
+        logActivity('restore', 'footer', 'Restored footer');
         break;
       case 'dashboard':
         restoreDashboardLayout();
+        logActivity('restore', 'dashboard', 'Restored dashboard layout');
         break;
       case 'page':
         restorePage(activePage);
+        logActivity('restore', activePage, 'Restored page');
         break;
       case 'defaults':
         restoreDefaults();
+        logActivity('restore', 'defaults', 'Restored all defaults');
         break;
       case 'published':
         restoreLastPublished();
+        logActivity('restore', 'published', 'Restored last published state');
         break;
     }
     setShowRestoreConfirm(null);
-  }, [restoreComponent, restorePage, restoreDashboardLayout, restoreDefaults, restoreLastPublished, activePage]);
+  }, [restoreComponent, restorePage, restoreDashboardLayout, restoreDefaults, restoreLastPublished, activePage, logActivity]);
+
+  const handleExport = useCallback(() => {
+    const config = exportConfig();
+    const blob = new Blob([config], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `horus-admin-config-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    logActivity('export', 'config', 'Exported configuration');
+  }, [exportConfig, logActivity]);
+
+  const handleImport = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        const result = importConfig(evt.target?.result as string);
+        if (result) {
+          logActivity('import', 'config', 'Imported configuration');
+        }
+      };
+      reader.readAsText(file);
+    }
+  }, [importConfig, logActivity]);
+
+  const handleInviteTeamMember = useCallback(() => {
+    if (inviteEmail.trim()) {
+      inviteTeamMember(inviteEmail.trim(), inviteRole);
+      logActivity('invite', inviteEmail.trim(), `Invited as ${inviteRole}`);
+      setInviteEmail('');
+    }
+  }, [inviteTeamMember, inviteEmail, inviteRole, logActivity]);
 
   // Sidebar Navigation
-  const sidebarItems = [
-    { id: 'pages', icon: Layout, label: 'Pages', labelAr: 'الصفحات' },
-    { id: 'dashboard', icon: BarChart3, label: 'Dashboard', labelAr: 'لوحة التحكم' },
-    { id: 'reports', icon: FileText, label: 'Reports', labelAr: 'التقارير' },
-    { id: 'ai-chat', icon: MessageSquare, label: 'AI Chat', labelAr: 'محادثة AI' },
-    { id: 'global', icon: Palette, label: 'Global Style', labelAr: 'الأنماط العامة' },
-    { id: 'snapshots', icon: History, label: 'Snapshots', labelAr: 'النسخ' },
+  const sidebarSections = [
+    {
+      title: isRTL ? 'عام' : 'General',
+      items: [
+        { id: 'overview', icon: Layout, label: 'Overview', labelAr: 'نظرة عامة' },
+        { id: 'activity', icon: Activity, label: 'Activity', labelAr: 'النشاط', badge: activityLog.length > 0 ? `${Math.min(activityLog.length, 99)}` : undefined },
+      ],
+    },
+    {
+      title: isRTL ? 'المحتوى' : 'Content',
+      items: [
+        { id: 'pages', icon: FileText, label: 'Pages', labelAr: 'الصفحات' },
+        { id: 'content', icon: Type, label: 'CMS', labelAr: 'إدارة المحتوى' },
+        { id: 'navbar-footer', icon: Navigation, label: 'Nav & Footer', labelAr: 'القائمة والتذييل' },
+        { id: 'media', icon: Image, label: 'Media', labelAr: 'الوسائط' },
+      ],
+    },
+    {
+      title: isRTL ? 'التطبيقات' : 'Apps',
+      items: [
+        { id: 'dashboard', icon: BarChart3, label: 'Dashboard', labelAr: 'لوحة التحكم' },
+        { id: 'reports', icon: FileCode, label: 'Reports', labelAr: 'التقارير' },
+        { id: 'ai-chat', icon: MessageSquare, label: 'AI Chat', labelAr: 'محادثة AI' },
+      ],
+    },
+    {
+      title: isRTL ? 'العلامة التجارية' : 'Branding',
+      items: [
+        { id: 'brand', icon: Palette, label: 'Brand', labelAr: 'العلامة التجارية' },
+        { id: 'seo', icon: Globe, label: 'SEO', labelAr: 'تحسين محركات البحث' },
+      ],
+    },
+    {
+      title: isRTL ? 'الأعمال' : 'Business',
+      items: [
+        { id: 'pricing', icon: DollarSign, label: 'Pricing', labelAr: 'التسعير' },
+        { id: 'forms', icon: Mail, label: 'Forms', labelAr: 'النماذج' },
+        { id: 'submissions', icon: Database, label: 'Inbox', labelAr: 'البريد الوارد', badge: submissions.filter(s => s.status === 'new').length > 0 ? `${submissions.filter(s => s.status === 'new').length}` : undefined },
+        { id: 'policies', icon: Scale, label: 'Policies', labelAr: 'السياسات' },
+      ],
+    },
+    {
+      title: isRTL ? 'الإدارة' : 'Admin',
+      items: [
+        { id: 'team', icon: Users, label: 'Team', labelAr: 'الفريق' },
+        { id: 'visibility', icon: Eye, label: 'Visibility', labelAr: 'الرؤية' },
+        { id: 'presets', icon: Layers, label: 'Presets', labelAr: 'القوالب' },
+        { id: 'redirects', icon: Link, label: 'Redirects', labelAr: 'التوجيهات' },
+      ],
+    },
+    {
+      title: isRTL ? 'النظام' : 'System',
+      items: [
+        { id: 'snapshots', icon: History, label: 'Snapshots', labelAr: 'النسخ', badge: snapshots.length > 0 ? `${snapshots.length}` : undefined },
+        { id: 'trash', icon: Trash2, label: 'Trash', labelAr: 'المحذوفات', badge: trash.length > 0 ? `${trash.length}` : undefined },
+        { id: 'settings', icon: Settings, label: 'Settings', labelAr: 'الإعدادات' },
+      ],
+    },
   ];
 
   const pageOptions = [
@@ -384,10 +608,166 @@ export function Admin({ onNavigate }: AdminProps) {
     { value: 'contact', label: 'Contact', labelAr: 'تواصل معنا' },
   ];
 
-  // Render Page Editor
-  const renderPageEditor = () => (
+  const roleOptions: { value: Role; label: string; labelAr: string }[] = [
+    { value: 'super_admin', label: 'Super Admin', labelAr: 'مدير عام' },
+    { value: 'admin', label: 'Admin', labelAr: 'مدير' },
+    { value: 'editor', label: 'Editor', labelAr: 'محرر' },
+    { value: 'viewer', label: 'Viewer', labelAr: 'مشاهد' },
+    { value: 'content_manager', label: 'Content Manager', labelAr: 'مدير محتوى' },
+    { value: 'support', label: 'Support', labelAr: 'دعم' },
+    { value: 'finance', label: 'Finance', labelAr: 'مالية' },
+  ];
+
+  // ============================================================================
+  // RENDER FUNCTIONS
+  // ============================================================================
+
+  // Overview Panel
+  const renderOverview = () => (
+    <div className="space-y-6">
+      {/* Quick Stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="p-4 bg-slate-800/50 rounded-xl border border-slate-700/50">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-500/20 rounded-lg">
+              <FileText className="w-5 h-5 text-blue-400" />
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-white">{Object.keys(draftConfig.pages).length}</div>
+              <div className="text-xs text-slate-400">{isRTL ? 'صفحات' : 'Pages'}</div>
+            </div>
+          </div>
+        </div>
+        <div className="p-4 bg-slate-800/50 rounded-xl border border-slate-700/50">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-green-500/20 rounded-lg">
+              <Grid3X3 className="w-5 h-5 text-green-400" />
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-white">{draftConfig.dashboard.widgets.length}</div>
+              <div className="text-xs text-slate-400">{isRTL ? 'عناصر' : 'Widgets'}</div>
+            </div>
+          </div>
+        </div>
+        <div className="p-4 bg-slate-800/50 rounded-xl border border-slate-700/50">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-amber-500/20 rounded-lg">
+              <Users className="w-5 h-5 text-amber-400" />
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-white">{draftConfig.team.length}</div>
+              <div className="text-xs text-slate-400">{isRTL ? 'أعضاء الفريق' : 'Team Members'}</div>
+            </div>
+          </div>
+        </div>
+        <div className="p-4 bg-slate-800/50 rounded-xl border border-slate-700/50">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-purple-500/20 rounded-lg">
+              <History className="w-5 h-5 text-purple-400" />
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-white">{snapshots.length}</div>
+              <div className="text-xs text-slate-400">{isRTL ? 'نسخ احتياطية' : 'Snapshots'}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Quick Actions */}
+      <AccordionSection title="Quick Actions" titleAr="إجراءات سريعة" icon={Zap} defaultOpen>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            onClick={() => setActiveTab('pages')}
+            className="flex items-center gap-2 p-3 bg-slate-800/50 hover:bg-slate-700/50 border border-slate-700 rounded-lg text-sm text-white transition-colors"
+          >
+            <FileText className="w-4 h-4 text-blue-400" />
+            <span>{isRTL ? 'تعديل الصفحات' : 'Edit Pages'}</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('brand')}
+            className="flex items-center gap-2 p-3 bg-slate-800/50 hover:bg-slate-700/50 border border-slate-700 rounded-lg text-sm text-white transition-colors"
+          >
+            <Palette className="w-4 h-4 text-pink-400" />
+            <span>{isRTL ? 'تعديل العلامة التجارية' : 'Edit Brand'}</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('dashboard')}
+            className="flex items-center gap-2 p-3 bg-slate-800/50 hover:bg-slate-700/50 border border-slate-700 rounded-lg text-sm text-white transition-colors"
+          >
+            <BarChart3 className="w-4 h-4 text-green-400" />
+            <span>{isRTL ? 'إدارة لوحة التحكم' : 'Manage Dashboard'}</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('team')}
+            className="flex items-center gap-2 p-3 bg-slate-800/50 hover:bg-slate-700/50 border border-slate-700 rounded-lg text-sm text-white transition-colors"
+          >
+            <Users className="w-4 h-4 text-amber-400" />
+            <span>{isRTL ? 'إدارة الفريق' : 'Manage Team'}</span>
+          </button>
+        </div>
+      </AccordionSection>
+
+      {/* Favorites */}
+      {favorites.length > 0 && (
+        <AccordionSection title="Favorites" titleAr="المفضلة" icon={Star} defaultOpen>
+          <div className="space-y-2">
+            {favorites.map(fav => (
+              <div key={fav.id} className="flex items-center justify-between p-2 bg-slate-800/50 rounded-lg">
+                <span className="text-sm text-white">{isRTL ? fav.label.ar : fav.label.en}</span>
+                <button
+                  onClick={() => removeFavorite(fav.id)}
+                  className="p-1 text-slate-500 hover:text-yellow-400"
+                >
+                  <StarOff className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </AccordionSection>
+      )}
+
+      {/* Recent Activity */}
+      <AccordionSection title="Recent Activity" titleAr="النشاط الأخير" icon={Clock}>
+        <div className="space-y-2 max-h-48 overflow-y-auto">
+          {activityLog.slice(-10).reverse().map(entry => (
+            <div key={entry.id} className="flex items-center justify-between p-2 bg-slate-800/30 rounded-lg text-xs">
+              <span className="text-slate-300">{entry.action}: {entry.target}</span>
+              <span className="text-slate-500">{new Date(entry.timestamp).toLocaleTimeString()}</span>
+            </div>
+          ))}
+          {activityLog.length === 0 && (
+            <p className="text-sm text-slate-500 text-center py-4">{isRTL ? 'لا يوجد نشاط' : 'No activity yet'}</p>
+          )}
+        </div>
+      </AccordionSection>
+
+      {/* System Status */}
+      <AccordionSection title="System Status" titleAr="حالة النظام" icon={Info}>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between p-2 bg-slate-800/50 rounded-lg">
+            <span className="text-sm text-slate-300">{isRTL ? 'آخر نشر' : 'Last Published'}</span>
+            <span className="text-xs text-slate-500">
+              {draftConfig.lastPublished 
+                ? new Date(draftConfig.lastPublished).toLocaleString()
+                : isRTL ? 'لم يتم النشر' : 'Not published yet'}
+            </span>
+          </div>
+          <div className="flex items-center justify-between p-2 bg-slate-800/50 rounded-lg">
+            <span className="text-sm text-slate-300">{isRTL ? 'تغييرات غير محفوظة' : 'Unsaved Changes'}</span>
+            <StatusBadge status={hasUnsavedChanges ? 'pending' : 'published'} />
+          </div>
+          <div className="flex items-center justify-between p-2 bg-slate-800/50 rounded-lg">
+            <span className="text-sm text-slate-300">{isRTL ? 'وضع الصيانة' : 'Maintenance Mode'}</span>
+            <StatusBadge status={draftConfig.maintenance.enabled ? 'maintenance' : 'active'} />
+          </div>
+        </div>
+      </AccordionSection>
+    </div>
+  );
+
+  // Pages Panel
+  const renderPages = () => (
     <div className="space-y-4">
-      {/* Page Selector */}
       <SelectField
         label="Select Page"
         labelAr="اختر الصفحة"
@@ -396,347 +776,32 @@ export function Admin({ onNavigate }: AdminProps) {
         options={pageOptions}
       />
 
-      {/* Section Tabs */}
-      <div className="flex gap-1 p-1 bg-slate-800/50 rounded-lg">
-        {(['navbar', 'hero', 'sections', 'style'] as const).map(section => (
-          <button
-            key={section}
-            onClick={() => setActivePageSection(section)}
-            className={`flex-1 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-              activePageSection === section
-                ? 'bg-blue-500 text-white'
-                : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
-            }`}
-          >
-            {section === 'navbar' && (isRTL ? 'القائمة' : 'Navbar')}
-            {section === 'hero' && (isRTL ? 'الهيرو' : 'Hero')}
-            {section === 'sections' && (isRTL ? 'الأقسام' : 'Sections')}
-            {section === 'style' && (isRTL ? 'الأنماط' : 'Style')}
-          </button>
-        ))}
-      </div>
-
-      {/* Navbar Editor */}
-      {activePageSection === 'navbar' && (
-        <div className="space-y-3">
-          <AccordionSection title="Logo" titleAr="الشعار" icon={Sparkles} defaultOpen>
-            <InputField
-              label="Logo Text"
-              labelAr="نص الشعار"
-              value={draftConfig.navbar.logo.text}
-              onChange={(v) => updateDraft('navbar.logo.text', v)}
-            />
-            <ToggleRow
-              label="Visible"
-              labelAr="مرئي"
-              checked={draftConfig.navbar.logo.visible}
-              onChange={(v) => updateDraft('navbar.logo.visible', v)}
-            />
-          </AccordionSection>
-
-          <AccordionSection title="Navigation Items" titleAr="عناصر التنقل" icon={Navigation} defaultOpen>
-            <div className="space-y-2">
-              {draftConfig.navbar.items
-                .sort((a, b) => a.order - b.order)
-                .map((item, idx) => (
-                  <DraggableItem
-                    key={item.id}
-                    visible={item.visible}
-                    canMoveUp={idx > 0}
-                    canMoveDown={idx < draftConfig.navbar.items.length - 1}
-                    onMoveUp={() => {
-                      const items = [...draftConfig.navbar.items].sort((a, b) => a.order - b.order);
-                      if (idx > 0) {
-                        const temp = items[idx].order;
-                        items[idx].order = items[idx - 1].order;
-                        items[idx - 1].order = temp;
-                        updateDraft('navbar.items', items);
-                      }
-                    }}
-                    onMoveDown={() => {
-                      const items = [...draftConfig.navbar.items].sort((a, b) => a.order - b.order);
-                      if (idx < items.length - 1) {
-                        const temp = items[idx].order;
-                        items[idx].order = items[idx + 1].order;
-                        items[idx + 1].order = temp;
-                        updateDraft('navbar.items', items);
-                      }
-                    }}
-                    onToggleVisibility={() => {
-                      const items = [...draftConfig.navbar.items];
-                      const itemIdx = items.findIndex(i => i.id === item.id);
-                      items[itemIdx].visible = !items[itemIdx].visible;
-                      updateDraft('navbar.items', items);
-                    }}
-                  >
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        value={isRTL ? item.label.ar : item.label.en}
-                        onChange={(e) => {
-                          const items = [...draftConfig.navbar.items];
-                          const itemIdx = items.findIndex(i => i.id === item.id);
-                          if (isRTL) {
-                            items[itemIdx].label.ar = e.target.value;
-                          } else {
-                            items[itemIdx].label.en = e.target.value;
-                          }
-                          updateDraft('navbar.items', items);
-                        }}
-                        className="flex-1 px-2 py-1 bg-slate-700/50 border border-slate-600 rounded text-xs text-white"
-                      />
-                    </div>
-                  </DraggableItem>
-                ))}
-            </div>
-          </AccordionSection>
-
-          <AccordionSection title="CTA Button" titleAr="زر الدعوة" icon={Box}>
-            <InputField
-              label={isRTL ? 'النص (عربي)' : 'Text (Arabic)'}
-              labelAr="النص (عربي)"
-              value={draftConfig.navbar.ctaButton?.text.ar || ''}
-              onChange={(v) => updateDraft('navbar.ctaButton.text.ar', v)}
-            />
-            <InputField
-              label={isRTL ? 'النص (انجليزي)' : 'Text (English)'}
-              labelAr="النص (انجليزي)"
-              value={draftConfig.navbar.ctaButton?.text.en || ''}
-              onChange={(v) => updateDraft('navbar.ctaButton.text.en', v)}
-            />
+      {activePage !== 'home' && (
+        <>
+          {/* Page Status */}
+          <AccordionSection title="Page Status" titleAr="حالة الصفحة" icon={Tag} defaultOpen>
             <SelectField
-              label="Variant"
-              labelAr="النوع"
-              value={draftConfig.navbar.ctaButton?.variant || 'primary'}
-              onChange={(v) => updateDraft('navbar.ctaButton.variant', v)}
+              label="Status"
+              labelAr="الحالة"
+              value={draftConfig.pages[activePage]?.status || 'active'}
+              onChange={(v) => updateDraft(`pages.${activePage}.status`, v)}
               options={[
-                { value: 'primary', label: 'Primary', labelAr: 'أساسي' },
-                { value: 'secondary', label: 'Secondary', labelAr: 'ثانوي' },
-                { value: 'outline', label: 'Outline', labelAr: 'محدد' },
-                { value: 'ghost', label: 'Ghost', labelAr: 'شفاف' },
+                { value: 'active', label: 'Active', labelAr: 'نشط' },
+                { value: 'hidden', label: 'Hidden', labelAr: 'مخفي' },
+                { value: 'draft', label: 'Draft', labelAr: 'مسودة' },
+                { value: 'maintenance', label: 'Maintenance', labelAr: 'صيانة' },
               ]}
             />
-            <SelectField
-              label="Size"
-              labelAr="الحجم"
-              value={draftConfig.navbar.ctaButton?.size || 'md'}
-              onChange={(v) => updateDraft('navbar.ctaButton.size', v)}
-              options={[
-                { value: 'sm', label: 'Small', labelAr: 'صغير' },
-                { value: 'md', label: 'Medium', labelAr: 'متوسط' },
-                { value: 'lg', label: 'Large', labelAr: 'كبير' },
-              ]}
-            />
-            <ToggleRow
-              label="Visible"
-              labelAr="مرئي"
-              checked={draftConfig.navbar.ctaButton?.visible ?? true}
-              onChange={(v) => updateDraft('navbar.ctaButton.visible', v)}
+            <TextareaField
+              label="Internal Notes"
+              labelAr="ملاحظات داخلية"
+              value={draftConfig.pages[activePage]?.internalNotes || ''}
+              onChange={(v) => updateDraft(`pages.${activePage}.internalNotes`, v)}
+              rows={2}
             />
           </AccordionSection>
 
-          {/* Restore Navbar */}
-          <button
-            onClick={() => setShowRestoreConfirm('navbar')}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-slate-800/50 hover:bg-slate-700/50 border border-slate-700 rounded-lg text-sm text-slate-300 transition-colors"
-          >
-            <RotateCcw className="w-4 h-4" />
-            <span>{isRTL ? 'استعادة القائمة' : 'Restore Navbar'}</span>
-          </button>
-        </div>
-      )}
-
-      {/* Hero Editor */}
-      {activePageSection === 'hero' && (
-        <div className="space-y-3">
-          <AccordionSection title="Headline" titleAr="العنوان الرئيسي" icon={Type} defaultOpen>
-            <InputField
-              label="Arabic"
-              labelAr="عربي"
-              value={draftConfig.hero.headline.text.ar}
-              onChange={(v) => updateDraft('hero.headline.text.ar', v)}
-            />
-            <InputField
-              label="English"
-              labelAr="انجليزي"
-              value={draftConfig.hero.headline.text.en}
-              onChange={(v) => updateDraft('hero.headline.text.en', v)}
-            />
-            <SelectField
-              label="Font Size"
-              labelAr="حجم الخط"
-              value={draftConfig.hero.headline.fontSize || '4xl'}
-              onChange={(v) => updateDraft('hero.headline.fontSize', v)}
-              options={[
-                { value: 'xl', label: 'XL', labelAr: 'XL' },
-                { value: '2xl', label: '2XL', labelAr: '2XL' },
-                { value: '3xl', label: '3XL', labelAr: '3XL' },
-                { value: '4xl', label: '4XL', labelAr: '4XL' },
-                { value: '5xl', label: '5XL', labelAr: '5XL' },
-                { value: '6xl', label: '6XL', labelAr: '6XL' },
-              ]}
-            />
-            <SelectField
-              label="Font Weight"
-              labelAr="سمك الخط"
-              value={draftConfig.hero.headline.fontWeight || 'bold'}
-              onChange={(v) => updateDraft('hero.headline.fontWeight', v)}
-              options={[
-                { value: 'normal', label: 'Normal', labelAr: 'عادي' },
-                { value: 'medium', label: 'Medium', labelAr: 'متوسط' },
-                { value: 'semibold', label: 'Semibold', labelAr: 'شبه سميك' },
-                { value: 'bold', label: 'Bold', labelAr: 'سميك' },
-                { value: 'extrabold', label: 'Extra Bold', labelAr: 'سميك جداً' },
-              ]}
-            />
-            <ToggleRow
-              label="Visible"
-              labelAr="مرئي"
-              checked={draftConfig.hero.headline.visible ?? true}
-              onChange={(v) => updateDraft('hero.headline.visible', v)}
-            />
-          </AccordionSection>
-
-          <AccordionSection title="Subheadline" titleAr="العنوان الفرعي" icon={Type}>
-            <InputField
-              label="Arabic"
-              labelAr="عربي"
-              value={draftConfig.hero.subheadline.text.ar}
-              onChange={(v) => updateDraft('hero.subheadline.text.ar', v)}
-            />
-            <InputField
-              label="English"
-              labelAr="انجليزي"
-              value={draftConfig.hero.subheadline.text.en}
-              onChange={(v) => updateDraft('hero.subheadline.text.en', v)}
-            />
-            <ToggleRow
-              label="Visible"
-              labelAr="مرئي"
-              checked={draftConfig.hero.subheadline.visible ?? true}
-              onChange={(v) => updateDraft('hero.subheadline.visible', v)}
-            />
-          </AccordionSection>
-
-          <AccordionSection title="CTA Button" titleAr="الزر الرئيسي" icon={Box}>
-            <InputField
-              label="Arabic"
-              labelAr="عربي"
-              value={draftConfig.hero.ctaButton.text.ar}
-              onChange={(v) => updateDraft('hero.ctaButton.text.ar', v)}
-            />
-            <InputField
-              label="English"
-              labelAr="انجليزي"
-              value={draftConfig.hero.ctaButton.text.en}
-              onChange={(v) => updateDraft('hero.ctaButton.text.en', v)}
-            />
-            <SelectField
-              label="Variant"
-              labelAr="النوع"
-              value={draftConfig.hero.ctaButton.variant || 'primary'}
-              onChange={(v) => updateDraft('hero.ctaButton.variant', v)}
-              options={[
-                { value: 'primary', label: 'Primary', labelAr: 'أساسي' },
-                { value: 'secondary', label: 'Secondary', labelAr: 'ثانوي' },
-                { value: 'outline', label: 'Outline', labelAr: 'محدد' },
-              ]}
-            />
-            <SelectField
-              label="Size"
-              labelAr="الحجم"
-              value={draftConfig.hero.ctaButton.size || 'lg'}
-              onChange={(v) => updateDraft('hero.ctaButton.size', v)}
-              options={[
-                { value: 'sm', label: 'Small', labelAr: 'صغير' },
-                { value: 'md', label: 'Medium', labelAr: 'متوسط' },
-                { value: 'lg', label: 'Large', labelAr: 'كبير' },
-              ]}
-            />
-            <ToggleRow
-              label="Visible"
-              labelAr="مرئي"
-              checked={draftConfig.hero.ctaButton.visible ?? true}
-              onChange={(v) => updateDraft('hero.ctaButton.visible', v)}
-            />
-          </AccordionSection>
-
-          <AccordionSection title="Secondary Button" titleAr="الزر الثانوي" icon={Box}>
-            <InputField
-              label="Arabic"
-              labelAr="عربي"
-              value={draftConfig.hero.secondaryButton?.text.ar || ''}
-              onChange={(v) => updateDraft('hero.secondaryButton.text.ar', v)}
-            />
-            <InputField
-              label="English"
-              labelAr="انجليزي"
-              value={draftConfig.hero.secondaryButton?.text.en || ''}
-              onChange={(v) => updateDraft('hero.secondaryButton.text.en', v)}
-            />
-            <ToggleRow
-              label="Visible"
-              labelAr="مرئي"
-              checked={draftConfig.hero.secondaryButton?.visible ?? true}
-              onChange={(v) => updateDraft('hero.secondaryButton.visible', v)}
-            />
-          </AccordionSection>
-
-          <AccordionSection title="Audience Cards" titleAr="بطاقات الجمهور" icon={Layers}>
-            <div className="space-y-2">
-              {draftConfig.hero.audienceCards
-                .sort((a, b) => a.order - b.order)
-                .map((card, idx) => (
-                  <DraggableItem
-                    key={card.id}
-                    visible={card.visible}
-                    canMoveUp={idx > 0}
-                    canMoveDown={idx < draftConfig.hero.audienceCards.length - 1}
-                    onMoveUp={() => {
-                      const cards = [...draftConfig.hero.audienceCards].sort((a, b) => a.order - b.order);
-                      if (idx > 0) {
-                        const temp = cards[idx].order;
-                        cards[idx].order = cards[idx - 1].order;
-                        cards[idx - 1].order = temp;
-                        updateDraft('hero.audienceCards', cards);
-                      }
-                    }}
-                    onMoveDown={() => {
-                      const cards = [...draftConfig.hero.audienceCards].sort((a, b) => a.order - b.order);
-                      if (idx < cards.length - 1) {
-                        const temp = cards[idx].order;
-                        cards[idx].order = cards[idx + 1].order;
-                        cards[idx + 1].order = temp;
-                        updateDraft('hero.audienceCards', cards);
-                      }
-                    }}
-                    onToggleVisibility={() => {
-                      const cards = [...draftConfig.hero.audienceCards];
-                      const cardIdx = cards.findIndex(c => c.id === card.id);
-                      cards[cardIdx].visible = !cards[cardIdx].visible;
-                      updateDraft('hero.audienceCards', cards);
-                    }}
-                  >
-                    <div className="text-xs text-slate-300">{isRTL ? card.title.ar : card.title.en}</div>
-                  </DraggableItem>
-                ))}
-            </div>
-          </AccordionSection>
-
-          {/* Restore Hero */}
-          <button
-            onClick={() => setShowRestoreConfirm('hero')}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-slate-800/50 hover:bg-slate-700/50 border border-slate-700 rounded-lg text-sm text-slate-300 transition-colors"
-          >
-            <RotateCcw className="w-4 h-4" />
-            <span>{isRTL ? 'استعادة الهيرو' : 'Restore Hero'}</span>
-          </button>
-        </div>
-      )}
-
-      {/* Sections Editor */}
-      {activePageSection === 'sections' && activePage !== 'home' && (
-        <div className="space-y-3">
+          {/* Page Sections */}
           <AccordionSection title="Page Sections" titleAr="أقسام الصفحة" icon={Layers} defaultOpen>
             <div className="space-y-2">
               {(draftConfig.pages[activePage]?.sections || [])
@@ -782,6 +847,10 @@ export function Admin({ onNavigate }: AdminProps) {
                       updateDraft(`pages.${activePage}.sections`, sections);
                     }}
                     onDelete={() => {
+                      const sectionData = draftConfig.pages[activePage]?.sections.find(s => s.id === section.id);
+                      if (sectionData) {
+                        moveToTrash('section', section.id, sectionData, `pages.${activePage}.sections`);
+                      }
                       const sections = (draftConfig.pages[activePage]?.sections || []).filter(s => s.id !== section.id);
                       updateDraft(`pages.${activePage}.sections`, sections);
                     }}
@@ -819,64 +888,138 @@ export function Admin({ onNavigate }: AdminProps) {
             <RotateCcw className="w-4 h-4" />
             <span>{isRTL ? 'استعادة الصفحة' : 'Restore Page'}</span>
           </button>
-        </div>
+        </>
       )}
 
-      {activePageSection === 'sections' && activePage === 'home' && (
-        <div className="p-4 bg-slate-800/30 rounded-lg border border-slate-700/50 text-center">
-          <p className="text-sm text-slate-400">
-            {isRTL ? 'الصفحة الرئيسية محمية ولا يمكن تعديل ترتيب أقسامها' : 'Homepage is protected. Section order cannot be modified.'}
-          </p>
-        </div>
-      )}
-
-      {/* Style Editor */}
-      {activePageSection === 'style' && (
-        <div className="space-y-3">
-          <AccordionSection title="Page Background" titleAr="خلفية الصفحة" icon={Image} defaultOpen>
-            <ColorPicker
-              label="Background Color"
-              labelAr="لون الخلفية"
-              value={draftConfig.pages[activePage]?.style?.backgroundColor || draftConfig.global.backgroundColor}
-              onChange={(v) => updateDraft(`pages.${activePage}.style.backgroundColor`, v)}
-            />
-          </AccordionSection>
-
-          <AccordionSection title="Typography" titleAr="الخطوط" icon={Type}>
-            <SelectField
-              label="Text Alignment"
-              labelAr="محاذاة النص"
-              value={draftConfig.pages[activePage]?.style?.alignment || 'center'}
-              onChange={(v) => updateDraft(`pages.${activePage}.style.alignment`, v)}
-              options={[
-                { value: 'left', label: 'Left', labelAr: 'يسار' },
-                { value: 'center', label: 'Center', labelAr: 'وسط' },
-                { value: 'right', label: 'Right', labelAr: 'يمين' },
-              ]}
-            />
-          </AccordionSection>
-
-          <AccordionSection title="Spacing" titleAr="المسافات" icon={Box}>
-            <InputField
-              label="Padding"
-              labelAr="الحشو"
-              value={draftConfig.pages[activePage]?.style?.padding || '0'}
-              onChange={(v) => updateDraft(`pages.${activePage}.style.padding`, v)}
-            />
-            <InputField
-              label="Gap"
-              labelAr="الفجوة"
-              value={draftConfig.pages[activePage]?.style?.gap || '0'}
-              onChange={(v) => updateDraft(`pages.${activePage}.style.gap`, v)}
-            />
-          </AccordionSection>
+      {activePage === 'home' && (
+        <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+          <div className="flex items-start gap-3">
+            <Lock className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+            <div>
+              <h4 className="text-sm font-medium text-amber-400">{isRTL ? 'الصفحة الرئيسية محمية' : 'Homepage Protected'}</h4>
+              <p className="text-xs text-slate-400 mt-1">
+                {isRTL 
+                  ? 'الصفحة الرئيسية محمية ولا يمكن تعديل هيكلها. استخدم محرر المحتوى لتعديل النصوص.'
+                  : 'Homepage structure is protected. Use Content CMS to edit text content.'}
+              </p>
+            </div>
+          </div>
         </div>
       )}
     </div>
   );
 
-  // Render Dashboard Editor
-  const renderDashboardEditor = () => (
+  // Brand Panel
+  const renderBrand = () => (
+    <div className="space-y-4">
+      <AccordionSection title="Brand Identity" titleAr="هوية العلامة التجارية" icon={Sparkles} defaultOpen>
+        <InputField
+          label="Brand Name"
+          labelAr="اسم العلامة التجارية"
+          value={draftConfig.brand.name}
+          onChange={(v) => updateDraft('brand.name', v)}
+        />
+        <InputField
+          label="Logo URL"
+          labelAr="رابط الشعار"
+          value={draftConfig.brand.logoUrl || ''}
+          onChange={(v) => updateDraft('brand.logoUrl', v)}
+          type="url"
+        />
+        <InputField
+          label="Favicon URL"
+          labelAr="رابط الأيقونة"
+          value={draftConfig.brand.faviconUrl || ''}
+          onChange={(v) => updateDraft('brand.faviconUrl', v)}
+          type="url"
+        />
+      </AccordionSection>
+
+      <AccordionSection title="Colors" titleAr="الألوان" icon={Palette} defaultOpen>
+        <ColorPicker
+          label="Primary Color"
+          labelAr="اللون الأساسي"
+          value={draftConfig.brand.primaryColor}
+          onChange={(v) => updateDraft('brand.primaryColor', v)}
+        />
+        <ColorPicker
+          label="Secondary Color"
+          labelAr="اللون الثانوي"
+          value={draftConfig.brand.secondaryColor}
+          onChange={(v) => updateDraft('brand.secondaryColor', v)}
+        />
+        <ColorPicker
+          label="Accent Color"
+          labelAr="اللون المميز"
+          value={draftConfig.brand.accentColor}
+          onChange={(v) => updateDraft('brand.accentColor', v)}
+        />
+        <ColorPicker
+          label="Background Color"
+          labelAr="لون الخلفية"
+          value={draftConfig.brand.backgroundColor}
+          onChange={(v) => updateDraft('brand.backgroundColor', v)}
+        />
+        <ColorPicker
+          label="Text Color"
+          labelAr="لون النص"
+          value={draftConfig.brand.textColor}
+          onChange={(v) => updateDraft('brand.textColor', v)}
+        />
+      </AccordionSection>
+
+      <AccordionSection title="Typography" titleAr="الخطوط" icon={Type}>
+        <InputField
+          label="Body Font"
+          labelAr="خط النص"
+          value={draftConfig.brand.fontFamily}
+          onChange={(v) => updateDraft('brand.fontFamily', v)}
+        />
+        <InputField
+          label="Heading Font"
+          labelAr="خط العناوين"
+          value={draftConfig.brand.headingFontFamily}
+          onChange={(v) => updateDraft('brand.headingFontFamily', v)}
+        />
+      </AccordionSection>
+
+      <AccordionSection title="Style" titleAr="الأنماط" icon={Box}>
+        <InputField
+          label="Border Radius"
+          labelAr="انحناء الحدود"
+          value={draftConfig.brand.borderRadius}
+          onChange={(v) => updateDraft('brand.borderRadius', v)}
+        />
+        <SelectField
+          label="Shadow Intensity"
+          labelAr="شدة الظل"
+          value={draftConfig.brand.shadowIntensity}
+          onChange={(v) => updateDraft('brand.shadowIntensity', v)}
+          options={[
+            { value: 'none', label: 'None', labelAr: 'بدون' },
+            { value: 'sm', label: 'Small', labelAr: 'صغير' },
+            { value: 'md', label: 'Medium', labelAr: 'متوسط' },
+            { value: 'lg', label: 'Large', labelAr: 'كبير' },
+            { value: 'xl', label: 'Extra Large', labelAr: 'كبير جداً' },
+          ]}
+        />
+        <SelectField
+          label="Icon Style"
+          labelAr="نمط الأيقونات"
+          value={draftConfig.brand.iconStyle}
+          onChange={(v) => updateDraft('brand.iconStyle', v)}
+          options={[
+            { value: 'outline', label: 'Outline', labelAr: 'محدد' },
+            { value: 'solid', label: 'Solid', labelAr: 'مملوء' },
+            { value: 'duotone', label: 'Duotone', labelAr: 'ثنائي' },
+          ]}
+        />
+      </AccordionSection>
+    </div>
+  );
+
+  // Dashboard Panel
+  const renderDashboard = () => (
     <div className="space-y-4">
       <AccordionSection title="Dashboard Widgets" titleAr="عناصر لوحة التحكم" icon={Grid3X3} defaultOpen>
         <div className="space-y-2">
@@ -923,6 +1066,7 @@ export function Admin({ onNavigate }: AdminProps) {
                   updateDraft('dashboard.widgets', widgets);
                 }}
                 onDelete={() => {
+                  moveToTrash('widget', widget.id, widget, 'dashboard.widgets');
                   const widgets = draftConfig.dashboard.widgets.filter(w => w.id !== widget.id);
                   updateDraft('dashboard.widgets', widgets);
                 }}
@@ -958,10 +1102,10 @@ export function Admin({ onNavigate }: AdminProps) {
         </button>
       </AccordionSection>
 
-      {/* Widget Settings */}
+      {/* Widget Editor */}
       {draftConfig.dashboard.widgets.length > 0 && (
         <AccordionSection title="Widget Settings" titleAr="إعدادات العناصر" icon={Settings}>
-          {draftConfig.dashboard.widgets.map(widget => (
+          {draftConfig.dashboard.widgets.slice(0, 4).map(widget => (
             <div key={widget.id} className="p-3 bg-slate-800/30 rounded-lg border border-slate-700/50 space-y-2">
               <div className="text-xs font-medium text-white">{isRTL ? widget.title.ar : widget.title.en}</div>
               <InputField
@@ -1004,48 +1148,24 @@ export function Admin({ onNavigate }: AdminProps) {
                 ]}
               />
               {widget.type === 'chart' && (
-                <>
-                  <SelectField
-                    label="Chart Type"
-                    labelAr="نوع الرسم"
-                    value={widget.chartType || 'line'}
-                    onChange={(v) => {
-                      const widgets = [...draftConfig.dashboard.widgets];
-                      const wIdx = widgets.findIndex(w => w.id === widget.id);
-                      widgets[wIdx].chartType = v as WidgetConfig['chartType'];
-                      updateDraft('dashboard.widgets', widgets);
-                    }}
-                    options={[
-                      { value: 'line', label: 'Line', labelAr: 'خطي' },
-                      { value: 'bar', label: 'Bar', labelAr: 'عمودي' },
-                      { value: 'pie', label: 'Pie', labelAr: 'دائري' },
-                      { value: 'area', label: 'Area', labelAr: 'منطقة' },
-                      { value: 'donut', label: 'Donut', labelAr: 'حلقي' },
-                    ]}
-                  />
-                  <ToggleRow
-                    label="Show Legend"
-                    labelAr="إظهار الدليل"
-                    checked={widget.showLegend ?? true}
-                    onChange={(v) => {
-                      const widgets = [...draftConfig.dashboard.widgets];
-                      const wIdx = widgets.findIndex(w => w.id === widget.id);
-                      widgets[wIdx].showLegend = v;
-                      updateDraft('dashboard.widgets', widgets);
-                    }}
-                  />
-                  <ToggleRow
-                    label="Show Labels"
-                    labelAr="إظهار التسميات"
-                    checked={widget.showLabels ?? true}
-                    onChange={(v) => {
-                      const widgets = [...draftConfig.dashboard.widgets];
-                      const wIdx = widgets.findIndex(w => w.id === widget.id);
-                      widgets[wIdx].showLabels = v;
-                      updateDraft('dashboard.widgets', widgets);
-                    }}
-                  />
-                </>
+                <SelectField
+                  label="Chart Type"
+                  labelAr="نوع الرسم"
+                  value={widget.chartType || 'line'}
+                  onChange={(v) => {
+                    const widgets = [...draftConfig.dashboard.widgets];
+                    const wIdx = widgets.findIndex(w => w.id === widget.id);
+                    widgets[wIdx].chartType = v as WidgetConfig['chartType'];
+                    updateDraft('dashboard.widgets', widgets);
+                  }}
+                  options={[
+                    { value: 'line', label: 'Line', labelAr: 'خطي' },
+                    { value: 'bar', label: 'Bar', labelAr: 'أعمدة' },
+                    { value: 'pie', label: 'Pie', labelAr: 'دائري' },
+                    { value: 'area', label: 'Area', labelAr: 'منطقة' },
+                    { value: 'donut', label: 'Donut', labelAr: 'حلقي' },
+                  ]}
+                />
               )}
               <SelectField
                 label="Width"
@@ -1061,7 +1181,7 @@ export function Admin({ onNavigate }: AdminProps) {
                   { value: '1', label: '1 Column', labelAr: 'عمود واحد' },
                   { value: '2', label: '2 Columns', labelAr: 'عمودين' },
                   { value: '3', label: '3 Columns', labelAr: '3 أعمدة' },
-                  { value: '4', label: 'Full Width', labelAr: 'عرض كامل' },
+                  { value: '4', label: 'Full Width', labelAr: 'العرض الكامل' },
                 ]}
               />
             </div>
@@ -1075,13 +1195,13 @@ export function Admin({ onNavigate }: AdminProps) {
         className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-slate-800/50 hover:bg-slate-700/50 border border-slate-700 rounded-lg text-sm text-slate-300 transition-colors"
       >
         <RotateCcw className="w-4 h-4" />
-        <span>{isRTL ? 'استعادة لوحة التحكم' : 'Restore Dashboard Layout'}</span>
+        <span>{isRTL ? 'استعادة لوحة التحكم' : 'Restore Dashboard'}</span>
       </button>
     </div>
   );
 
-  // Render Reports Editor
-  const renderReportsEditor = () => (
+  // Reports Panel
+  const renderReports = () => (
     <div className="space-y-4">
       <AccordionSection title="Report Blocks" titleAr="كتل التقرير" icon={FileText} defaultOpen>
         <div className="space-y-2">
@@ -1117,60 +1237,30 @@ export function Admin({ onNavigate }: AdminProps) {
                   blocks[bIdx].visible = !blocks[bIdx].visible;
                   updateDraft('reports.blocks', blocks);
                 }}
+                onDuplicate={() => {
+                  const blocks = [...draftConfig.reports.blocks];
+                  const newBlock: ReportBlockConfig = {
+                    ...JSON.parse(JSON.stringify(block)),
+                    id: `${block.id}_copy_${Date.now()}`,
+                    order: blocks.length,
+                  };
+                  blocks.push(newBlock);
+                  updateDraft('reports.blocks', blocks);
+                }}
               >
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-slate-300 capitalize">{block.type}</span>
-                  {block.title && (
-                    <span className="text-xs text-slate-500">({isRTL ? block.title.ar : block.title.en})</span>
-                  )}
+                  {block.title && <span className="text-xs text-slate-500">- {isRTL ? block.title.ar : block.title.en}</span>}
                 </div>
               </DraggableItem>
             ))}
         </div>
       </AccordionSection>
 
-      <AccordionSection title="Block Settings" titleAr="إعدادات الكتل" icon={Settings}>
-        {draftConfig.reports.blocks.map(block => (
-          <div key={block.id} className="p-3 bg-slate-800/30 rounded-lg border border-slate-700/50 space-y-2">
-            <div className="text-xs font-medium text-white capitalize">{block.type}</div>
-            {block.title && (
-              <>
-                <InputField
-                  label="Title (Arabic)"
-                  labelAr="العنوان (عربي)"
-                  value={block.title.ar}
-                  onChange={(v) => {
-                    const blocks = [...draftConfig.reports.blocks];
-                    const bIdx = blocks.findIndex(b => b.id === block.id);
-                    if (blocks[bIdx].title) {
-                      blocks[bIdx].title!.ar = v;
-                    }
-                    updateDraft('reports.blocks', blocks);
-                  }}
-                />
-                <InputField
-                  label="Title (English)"
-                  labelAr="العنوان (انجليزي)"
-                  value={block.title.en}
-                  onChange={(v) => {
-                    const blocks = [...draftConfig.reports.blocks];
-                    const bIdx = blocks.findIndex(b => b.id === block.id);
-                    if (blocks[bIdx].title) {
-                      blocks[bIdx].title!.en = v;
-                    }
-                    updateDraft('reports.blocks', blocks);
-                  }}
-                />
-              </>
-            )}
-          </div>
-        ))}
-      </AccordionSection>
-
-      <AccordionSection title="Print Settings" titleAr="إعدادات الطباعة" icon={FileText}>
+      <AccordionSection title="Report Settings" titleAr="إعدادات التقرير" icon={Settings}>
         <ToggleRow
           label="Show Header"
-          labelAr="إظهار الترويسة"
+          labelAr="إظهار الرأس"
           checked={draftConfig.reports.headerVisible}
           onChange={(v) => updateDraft('reports.headerVisible', v)}
         />
@@ -1194,8 +1284,8 @@ export function Admin({ onNavigate }: AdminProps) {
     </div>
   );
 
-  // Render AI Chat Editor
-  const renderAIChatEditor = () => (
+  // AI Chat Panel
+  const renderAIChat = () => (
     <div className="space-y-4">
       <AccordionSection title="Introduction" titleAr="المقدمة" icon={MessageSquare} defaultOpen>
         <InputField
@@ -1210,88 +1300,61 @@ export function Admin({ onNavigate }: AdminProps) {
           value={draftConfig.aiChat.introText.en}
           onChange={(v) => updateDraft('aiChat.introText.en', v)}
         />
-      </AccordionSection>
-
-      <AccordionSection title="Assistant Label" titleAr="تسمية المساعد" icon={Sparkles}>
         <InputField
-          label="Arabic"
-          labelAr="عربي"
+          label="Assistant Label (Arabic)"
+          labelAr="اسم المساعد (عربي)"
           value={draftConfig.aiChat.assistantLabel.ar}
           onChange={(v) => updateDraft('aiChat.assistantLabel.ar', v)}
         />
         <InputField
-          label="English"
-          labelAr="انجليزي"
+          label="Assistant Label (English)"
+          labelAr="اسم المساعد (انجليزي)"
           value={draftConfig.aiChat.assistantLabel.en}
           onChange={(v) => updateDraft('aiChat.assistantLabel.en', v)}
         />
       </AccordionSection>
 
-      <AccordionSection title="Empty State" titleAr="الحالة الفارغة" icon={Box}>
-        <InputField
-          label="Empty State (Arabic)"
-          labelAr="الحالة الفارغة (عربي)"
-          value={draftConfig.aiChat.emptyStateText.ar}
-          onChange={(v) => updateDraft('aiChat.emptyStateText.ar', v)}
-        />
-        <InputField
-          label="Empty State (English)"
-          labelAr="الحالة الفارغة (انجليزي)"
-          value={draftConfig.aiChat.emptyStateText.en}
-          onChange={(v) => updateDraft('aiChat.emptyStateText.en', v)}
-        />
-      </AccordionSection>
-
-      <AccordionSection title="Suggested Prompts" titleAr="المقترحات" icon={Type}>
+      <AccordionSection title="Suggested Prompts" titleAr="الاقتراحات" icon={Sparkles}>
         <div className="space-y-2">
           {draftConfig.aiChat.suggestedPrompts.map((prompt, idx) => (
-            <div key={idx} className="p-2 bg-slate-800/30 rounded-lg border border-slate-700/50 space-y-2">
-              <InputField
-                label={`Prompt ${idx + 1} (Arabic)`}
-                labelAr={`مقترح ${idx + 1} (عربي)`}
-                value={prompt.ar}
-                onChange={(v) => {
-                  const prompts = [...draftConfig.aiChat.suggestedPrompts];
-                  prompts[idx].ar = v;
-                  updateDraft('aiChat.suggestedPrompts', prompts);
-                }}
-              />
-              <InputField
-                label={`Prompt ${idx + 1} (English)`}
-                labelAr={`مقترح ${idx + 1} (انجليزي)`}
-                value={prompt.en}
-                onChange={(v) => {
-                  const prompts = [...draftConfig.aiChat.suggestedPrompts];
-                  prompts[idx].en = v;
-                  updateDraft('aiChat.suggestedPrompts', prompts);
-                }}
-              />
-              <button
-                onClick={() => {
-                  const prompts = draftConfig.aiChat.suggestedPrompts.filter((_, i) => i !== idx);
-                  updateDraft('aiChat.suggestedPrompts', prompts);
-                }}
-                className="w-full flex items-center justify-center gap-1 px-2 py-1 text-xs text-red-400 hover:text-red-300"
-              >
-                <Trash2 className="w-3 h-3" />
-                <span>{isRTL ? 'حذف' : 'Delete'}</span>
-              </button>
-            </div>
+            <DraggableItem
+              key={prompt.id}
+              visible={prompt.visible}
+              canMoveUp={idx > 0}
+              canMoveDown={idx < draftConfig.aiChat.suggestedPrompts.length - 1}
+              onToggleVisibility={() => {
+                const prompts = [...draftConfig.aiChat.suggestedPrompts];
+                prompts[idx].visible = !prompts[idx].visible;
+                updateDraft('aiChat.suggestedPrompts', prompts);
+              }}
+              onDelete={() => {
+                const prompts = draftConfig.aiChat.suggestedPrompts.filter((_, i) => i !== idx);
+                updateDraft('aiChat.suggestedPrompts', prompts);
+              }}
+            >
+              <span className="text-xs text-slate-300">{isRTL ? prompt.ar : prompt.en}</span>
+            </DraggableItem>
           ))}
         </div>
         <button
           onClick={() => {
-            const prompts = [...draftConfig.aiChat.suggestedPrompts, { ar: '', en: '' }];
+            const prompts = [...draftConfig.aiChat.suggestedPrompts];
+            prompts.push({
+              id: `prompt_${Date.now()}`,
+              ar: 'اقتراح جديد',
+              en: 'New prompt',
+              visible: true,
+            });
             updateDraft('aiChat.suggestedPrompts', prompts);
           }}
           className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 rounded-lg text-sm text-blue-400 transition-colors"
         >
           <Plus className="w-4 h-4" />
-          <span>{isRTL ? 'إضافة مقترح' : 'Add Prompt'}</span>
+          <span>{isRTL ? 'إضافة اقتراح' : 'Add Prompt'}</span>
         </button>
       </AccordionSection>
 
-      <AccordionSection title="Helper Blocks" titleAr="كتل المساعدة" icon={Layers}>
+      <AccordionSection title="Helper Blocks" titleAr="كتل المساعدة" icon={HelpCircle}>
         <div className="space-y-2">
           {draftConfig.aiChat.helperBlocks.map((block, idx) => (
             <DraggableItem
@@ -1310,440 +1373,904 @@ export function Admin({ onNavigate }: AdminProps) {
           ))}
         </div>
       </AccordionSection>
+
+      <AccordionSection title="Empty State" titleAr="الحالة الفارغة" icon={Box}>
+        <InputField
+          label="Empty State (Arabic)"
+          labelAr="الحالة الفارغة (عربي)"
+          value={draftConfig.aiChat.emptyStateText.ar}
+          onChange={(v) => updateDraft('aiChat.emptyStateText.ar', v)}
+        />
+        <InputField
+          label="Empty State (English)"
+          labelAr="الحالة الفارغة (انجليزي)"
+          value={draftConfig.aiChat.emptyStateText.en}
+          onChange={(v) => updateDraft('aiChat.emptyStateText.en', v)}
+        />
+      </AccordionSection>
     </div>
   );
 
-  // Render Global Style Editor
-  const renderGlobalEditor = () => (
+  // Team Panel
+  const renderTeam = () => (
     <div className="space-y-4">
-      <AccordionSection title="Colors" titleAr="الألوان" icon={Palette} defaultOpen>
-        <ColorPicker
-          label="Primary Color"
-          labelAr="اللون الأساسي"
-          value={draftConfig.global.primaryColor}
-          onChange={(v) => updateDraft('global.primaryColor', v)}
-        />
-        <ColorPicker
-          label="Secondary Color"
-          labelAr="اللون الثانوي"
-          value={draftConfig.global.secondaryColor}
-          onChange={(v) => updateDraft('global.secondaryColor', v)}
-        />
-        <ColorPicker
-          label="Accent Color"
-          labelAr="لون التمييز"
-          value={draftConfig.global.accentColor}
-          onChange={(v) => updateDraft('global.accentColor', v)}
-        />
-        <ColorPicker
-          label="Background Color"
-          labelAr="لون الخلفية"
-          value={draftConfig.global.backgroundColor}
-          onChange={(v) => updateDraft('global.backgroundColor', v)}
-        />
-        <ColorPicker
-          label="Text Color"
-          labelAr="لون النص"
-          value={draftConfig.global.textColor}
-          onChange={(v) => updateDraft('global.textColor', v)}
-        />
+      <AccordionSection title="Admin Emails" titleAr="بريد المديرين" icon={Shield} defaultOpen>
+        <div className="space-y-2">
+          {draftConfig.adminEmails.map((email, idx) => (
+            <div key={idx} className="flex items-center justify-between p-2 bg-slate-800/50 rounded-lg">
+              <span className="text-sm text-white">{email}</span>
+              <button
+                onClick={() => {
+                  const emails = draftConfig.adminEmails.filter((_, i) => i !== idx);
+                  updateDraft('adminEmails', emails);
+                }}
+                className="p-1 text-slate-500 hover:text-red-400"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          ))}
+          <div className="flex gap-2">
+            <input
+              type="email"
+              placeholder={isRTL ? 'بريد المدير' : 'Admin email'}
+              className="flex-1 px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  const input = e.target as HTMLInputElement;
+                  if (input.value.trim()) {
+                    updateDraft('adminEmails', [...draftConfig.adminEmails, input.value.trim()]);
+                    input.value = '';
+                  }
+                }
+              }}
+            />
+          </div>
+        </div>
       </AccordionSection>
 
-      <AccordionSection title="Typography" titleAr="الخطوط" icon={Type}>
-        <InputField
-          label="Body Font"
-          labelAr="خط النص"
-          value={draftConfig.global.fontFamily}
-          onChange={(v) => updateDraft('global.fontFamily', v)}
-        />
-        <InputField
-          label="Heading Font"
-          labelAr="خط العناوين"
-          value={draftConfig.global.headingFontFamily}
-          onChange={(v) => updateDraft('global.headingFontFamily', v)}
-        />
+      <AccordionSection title="Team Members" titleAr="أعضاء الفريق" icon={Users} defaultOpen>
+        <div className="space-y-2">
+          {draftConfig.team.map((member: TeamMember) => (
+            <div key={member.id} className="p-3 bg-slate-800/50 rounded-lg border border-slate-700/50">
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <div className="text-sm font-medium text-white">{member.email}</div>
+                  <div className="text-xs text-slate-500">{member.name || 'No name'}</div>
+                </div>
+                <StatusBadge status={member.status} />
+              </div>
+              <div className="flex items-center gap-2">
+                <SelectField
+                  label=""
+                  labelAr=""
+                  value={member.role}
+                  onChange={(v) => updateMemberRole(member.id, v as Role)}
+                  options={roleOptions}
+                />
+                <button
+                  onClick={() => member.status === 'suspended' ? reactivateMember(member.id) : suspendMember(member.id)}
+                  className={`p-2 rounded-lg ${member.status === 'suspended' ? 'bg-green-500/20 text-green-400' : 'bg-amber-500/20 text-amber-400'}`}
+                >
+                  {member.status === 'suspended' ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
+                </button>
+                <button
+                  onClick={() => removeTeamMember(member.id)}
+                  className="p-2 bg-red-500/20 text-red-400 rounded-lg"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
       </AccordionSection>
 
-      <AccordionSection title="Shape" titleAr="الشكل" icon={Box}>
+      <AccordionSection title="Invite Member" titleAr="دعوة عضو" icon={Mail}>
         <InputField
-          label="Border Radius"
-          labelAr="نصف قطر الحدود"
-          value={draftConfig.global.borderRadius}
-          onChange={(v) => updateDraft('global.borderRadius', v)}
+          label="Email"
+          labelAr="البريد الإلكتروني"
+          value={inviteEmail}
+          onChange={setInviteEmail}
+          type="email"
         />
         <SelectField
-          label="Shadow Intensity"
-          labelAr="شدة الظل"
-          value={draftConfig.global.shadowIntensity}
-          onChange={(v) => updateDraft('global.shadowIntensity', v)}
-          options={[
-            { value: 'none', label: 'None', labelAr: 'بدون' },
-            { value: 'sm', label: 'Small', labelAr: 'صغير' },
-            { value: 'md', label: 'Medium', labelAr: 'متوسط' },
-            { value: 'lg', label: 'Large', labelAr: 'كبير' },
-            { value: 'xl', label: 'Extra Large', labelAr: 'كبير جداً' },
-          ]}
+          label="Role"
+          labelAr="الدور"
+          value={inviteRole}
+          onChange={(v) => setInviteRole(v as Role)}
+          options={roleOptions}
         />
+        <button
+          onClick={handleInviteTeamMember}
+          disabled={!inviteEmail.trim()}
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-sm text-white transition-colors"
+        >
+          <Plus className="w-4 h-4" />
+          <span>{isRTL ? 'إرسال دعوة' : 'Send Invite'}</span>
+        </button>
       </AccordionSection>
-
-      {/* Restore Defaults */}
-      <button
-        onClick={() => setShowRestoreConfirm('defaults')}
-        className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/30 rounded-lg text-sm text-amber-400 transition-colors"
-      >
-        <RefreshCw className="w-4 h-4" />
-        <span>{isRTL ? 'استعادة الإعدادات الافتراضية' : 'Restore Defaults'}</span>
-      </button>
     </div>
   );
 
-  // Render Snapshots
+  // Visibility/Feature Toggles Panel
+  const renderVisibility = () => (
+    <div className="space-y-4">
+      <AccordionSection title="Feature Toggles" titleAr="تبديل الميزات" icon={ToggleLeft} defaultOpen>
+        <ToggleRow
+          label="Blog"
+          labelAr="المدونة"
+          checked={draftConfig.featureToggles.blog}
+          onChange={(v) => updateDraft('featureToggles.blog', v)}
+        />
+        <ToggleRow
+          label="Pricing Page"
+          labelAr="صفحة الأسعار"
+          checked={draftConfig.featureToggles.pricing}
+          onChange={(v) => updateDraft('featureToggles.pricing', v)}
+        />
+        <ToggleRow
+          label="Reports"
+          labelAr="التقارير"
+          checked={draftConfig.featureToggles.reports}
+          onChange={(v) => updateDraft('featureToggles.reports', v)}
+        />
+        <ToggleRow
+          label="AI Chat"
+          labelAr="محادثة AI"
+          checked={draftConfig.featureToggles.aiChat}
+          onChange={(v) => updateDraft('featureToggles.aiChat', v)}
+        />
+        <ToggleRow
+          label="Audience Pages"
+          labelAr="صفحات الجمهور"
+          checked={draftConfig.featureToggles.audiencePages}
+          onChange={(v) => updateDraft('featureToggles.audiencePages', v)}
+        />
+        <ToggleRow
+          label="Export Buttons"
+          labelAr="أزرار التصدير"
+          checked={draftConfig.featureToggles.exportButtons}
+          onChange={(v) => updateDraft('featureToggles.exportButtons', v)}
+        />
+        <ToggleRow
+          label="Support Blocks"
+          labelAr="كتل الدعم"
+          checked={draftConfig.featureToggles.supportBlocks}
+          onChange={(v) => updateDraft('featureToggles.supportBlocks', v)}
+        />
+        <ToggleRow
+          label="Admin Entry Button"
+          labelAr="زر دخول المدير"
+          checked={draftConfig.featureToggles.adminEntryButton}
+          onChange={(v) => updateDraft('featureToggles.adminEntryButton', v)}
+        />
+      </AccordionSection>
+
+      <AccordionSection title="Announcement Bar" titleAr="شريط الإعلان" icon={Megaphone}>
+        <ToggleRow
+          label="Show Announcement"
+          labelAr="إظهار الإعلان"
+          checked={draftConfig.announcement.visible}
+          onChange={(v) => updateDraft('announcement.visible', v)}
+        />
+        <InputField
+          label="Text (Arabic)"
+          labelAr="النص (عربي)"
+          value={draftConfig.announcement.text.ar}
+          onChange={(v) => updateDraft('announcement.text.ar', v)}
+        />
+        <InputField
+          label="Text (English)"
+          labelAr="النص (انجليزي)"
+          value={draftConfig.announcement.text.en}
+          onChange={(v) => updateDraft('announcement.text.en', v)}
+        />
+        <SelectField
+          label="Type"
+          labelAr="النوع"
+          value={draftConfig.announcement.type}
+          onChange={(v) => updateDraft('announcement.type', v)}
+          options={[
+            { value: 'info', label: 'Info', labelAr: 'معلومات' },
+            { value: 'warning', label: 'Warning', labelAr: 'تحذير' },
+            { value: 'promo', label: 'Promo', labelAr: 'ترويج' },
+            { value: 'emergency', label: 'Emergency', labelAr: 'طوارئ' },
+          ]}
+        />
+        <ToggleRow
+          label="Dismissible"
+          labelAr="قابل للإغلاق"
+          checked={draftConfig.announcement.dismissible}
+          onChange={(v) => updateDraft('announcement.dismissible', v)}
+        />
+      </AccordionSection>
+
+      <AccordionSection title="Maintenance Mode" titleAr="وضع الصيانة" icon={AlertTriangle}>
+        <ToggleRow
+          label="Enable Maintenance"
+          labelAr="تفعيل الصيانة"
+          checked={draftConfig.maintenance.enabled}
+          onChange={(v) => updateDraft('maintenance.enabled', v)}
+        />
+        <InputField
+          label="Message (Arabic)"
+          labelAr="الرسالة (عربي)"
+          value={draftConfig.maintenance.message.ar}
+          onChange={(v) => updateDraft('maintenance.message.ar', v)}
+        />
+        <InputField
+          label="Message (English)"
+          labelAr="الرسالة (انجليزي)"
+          value={draftConfig.maintenance.message.en}
+          onChange={(v) => updateDraft('maintenance.message.en', v)}
+        />
+      </AccordionSection>
+    </div>
+  );
+
+  // Pricing Panel
+  const renderPricing = () => (
+    <div className="space-y-4">
+      <AccordionSection title="Plans" titleAr="الخطط" icon={CreditCard} defaultOpen>
+        <div className="space-y-3">
+          {draftConfig.pricing.plans.map((plan: PricingPlan) => (
+            <div key={plan.id} className="p-3 bg-slate-800/50 rounded-lg border border-slate-700/50 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-white">{isRTL ? plan.name.ar : plan.name.en}</span>
+                <ToggleRow
+                  label=""
+                  labelAr=""
+                  checked={plan.visible}
+                  onChange={(v) => {
+                    const plans = [...draftConfig.pricing.plans];
+                    const pIdx = plans.findIndex(p => p.id === plan.id);
+                    plans[pIdx].visible = v;
+                    updateDraft('pricing.plans', plans);
+                  }}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <InputField
+                  label="Monthly"
+                  labelAr="شهري"
+                  value={String(plan.price.monthly)}
+                  onChange={(v) => {
+                    const plans = [...draftConfig.pricing.plans];
+                    const pIdx = plans.findIndex(p => p.id === plan.id);
+                    plans[pIdx].price.monthly = Number(v);
+                    updateDraft('pricing.plans', plans);
+                  }}
+                  type="number"
+                />
+                <InputField
+                  label="Yearly"
+                  labelAr="سنوي"
+                  value={String(plan.price.yearly)}
+                  onChange={(v) => {
+                    const plans = [...draftConfig.pricing.plans];
+                    const pIdx = plans.findIndex(p => p.id === plan.id);
+                    plans[pIdx].price.yearly = Number(v);
+                    updateDraft('pricing.plans', plans);
+                  }}
+                  type="number"
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      </AccordionSection>
+
+      <AccordionSection title="Payment Settings" titleAr="إعدادات الدفع" icon={DollarSign}>
+        <SelectField
+          label="Display Currency"
+          labelAr="العملة المعروضة"
+          value={draftConfig.pricing.payment.displayedCurrency}
+          onChange={(v) => updateDraft('pricing.payment.displayedCurrency', v)}
+          options={[
+            { value: 'EGP', label: 'EGP (Egyptian Pound)', labelAr: 'جنيه مصري' },
+            { value: 'USD', label: 'USD (US Dollar)', labelAr: 'دولار أمريكي' },
+          ]}
+        />
+        <ToggleRow
+          label="Show Monthly/Yearly Toggle"
+          labelAr="إظهار تبديل شهري/سنوي"
+          checked={draftConfig.pricing.payment.showMonthlyYearlyToggle}
+          onChange={(v) => updateDraft('pricing.payment.showMonthlyYearlyToggle', v)}
+        />
+        <ToggleRow
+          label="Show Comparison Table"
+          labelAr="إظهار جدول المقارنة"
+          checked={draftConfig.pricing.comparisonVisible}
+          onChange={(v) => updateDraft('pricing.comparisonVisible', v)}
+        />
+      </AccordionSection>
+
+      <AccordionSection title="Limits" titleAr="الحدود" icon={Database}>
+        <div className="text-xs text-slate-400 mb-2">{isRTL ? 'الخطة المجانية' : 'Free Plan'}</div>
+        <div className="grid grid-cols-2 gap-2">
+          <InputField
+            label="Dashboards"
+            labelAr="لوحات"
+            value={String(draftConfig.pricing.limits.free.dashboards)}
+            onChange={(v) => updateDraft('pricing.limits.free.dashboards', Number(v))}
+            type="number"
+          />
+          <InputField
+            label="Reports"
+            labelAr="تقارير"
+            value={String(draftConfig.pricing.limits.free.reports)}
+            onChange={(v) => updateDraft('pricing.limits.free.reports', Number(v))}
+            type="number"
+          />
+          <InputField
+            label="AI Usage"
+            labelAr="استخدام AI"
+            value={String(draftConfig.pricing.limits.free.aiUsage)}
+            onChange={(v) => updateDraft('pricing.limits.free.aiUsage', Number(v))}
+            type="number"
+          />
+          <InputField
+            label="Widgets"
+            labelAr="عناصر"
+            value={String(draftConfig.pricing.limits.free.widgets)}
+            onChange={(v) => updateDraft('pricing.limits.free.widgets', Number(v))}
+            type="number"
+          />
+        </div>
+      </AccordionSection>
+    </div>
+  );
+
+  // Snapshots Panel
   const renderSnapshots = () => (
     <div className="space-y-4">
-      {/* Create Snapshot */}
-      <div className="p-3 bg-slate-800/30 rounded-xl border border-slate-700/50 space-y-3">
-        <div className="flex items-center gap-2 text-sm font-medium text-white">
-          <Camera className="w-4 h-4 text-blue-400" />
-          <span>{isRTL ? 'إنشاء نسخة جديدة' : 'Create New Snapshot'}</span>
-        </div>
+      <AccordionSection title="Create Snapshot" titleAr="إنشاء نسخة" icon={Camera} defaultOpen>
         <InputField
           label="Snapshot Name"
           labelAr="اسم النسخة"
           value={snapshotName}
           onChange={setSnapshotName}
-          placeholder={isRTL ? 'أدخل اسم النسخة...' : 'Enter snapshot name...'}
+          placeholder={isRTL ? 'اسم النسخة الاحتياطية' : 'Backup name'}
         />
         <button
           onClick={handleCreateSnapshot}
           disabled={!snapshotName.trim()}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-sm text-white font-medium transition-colors"
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-sm text-white transition-colors"
         >
           <Plus className="w-4 h-4" />
           <span>{isRTL ? 'إنشاء نسخة' : 'Create Snapshot'}</span>
         </button>
-      </div>
+      </AccordionSection>
 
-      {/* Snapshots List */}
-      <div className="space-y-2">
-        <div className="text-xs text-slate-400 font-medium px-1">
-          {isRTL ? 'النسخ المحفوظة' : 'Saved Snapshots'} ({snapshots.length})
-        </div>
-        {snapshots.length === 0 ? (
-          <div className="p-4 bg-slate-800/30 rounded-lg border border-slate-700/50 text-center">
-            <History className="w-8 h-8 text-slate-600 mx-auto mb-2" />
-            <p className="text-sm text-slate-400">
-              {isRTL ? 'لا توجد نسخ محفوظة' : 'No snapshots saved'}
-            </p>
-          </div>
-        ) : (
-          snapshots.map(snapshot => (
-            <div key={snapshot.id} className="p-3 bg-slate-800/30 rounded-lg border border-slate-700/50 space-y-2">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm font-medium text-white">{snapshot.name}</div>
-                  <div className="flex items-center gap-1 text-xs text-slate-500">
-                    <Clock className="w-3 h-3" />
-                    <span>{new Date(snapshot.timestamp).toLocaleString(isRTL ? 'ar-EG' : 'en-US')}</span>
-                  </div>
+      <AccordionSection title="Saved Snapshots" titleAr="النسخ المحفوظة" icon={History} defaultOpen badge={`${snapshots.length}`}>
+        <div className="space-y-2 max-h-64 overflow-y-auto">
+          {snapshots.length === 0 ? (
+            <p className="text-sm text-slate-500 text-center py-4">{isRTL ? 'لا توجد نسخ' : 'No snapshots yet'}</p>
+          ) : (
+            snapshots.map(snapshot => (
+              <div key={snapshot.id} className="p-3 bg-slate-800/50 rounded-lg border border-slate-700/50">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-white">{snapshot.name}</span>
+                  <span className="text-xs text-slate-500">{new Date(snapshot.timestamp).toLocaleDateString()}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => revertToSnapshot(snapshot.id)}
+                    className="flex-1 px-2 py-1 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded text-xs"
+                  >
+                    {isRTL ? 'استعادة' : 'Revert'}
+                  </button>
+                  <button
+                    onClick={() => duplicateSnapshot(snapshot.id)}
+                    className="p-1 text-slate-500 hover:text-white"
+                  >
+                    <Copy className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => deleteSnapshot(snapshot.id)}
+                    className="p-1 text-slate-500 hover:text-red-400"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => revertToSnapshot(snapshot.id)}
-                  className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-blue-500/20 hover:bg-blue-500/30 rounded text-xs text-blue-400"
-                >
-                  <RotateCcw className="w-3 h-3" />
-                  <span>{isRTL ? 'استعادة' : 'Revert'}</span>
-                </button>
-                <button
-                  onClick={() => duplicateSnapshot(snapshot.id)}
-                  className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-slate-700/50 hover:bg-slate-700 rounded text-xs text-slate-300"
-                >
-                  <Copy className="w-3 h-3" />
-                  <span>{isRTL ? 'نسخ' : 'Duplicate'}</span>
-                </button>
-                <button
-                  onClick={() => deleteSnapshot(snapshot.id)}
-                  className="flex items-center justify-center p-1.5 bg-red-500/20 hover:bg-red-500/30 rounded text-red-400"
-                >
-                  <Trash2 className="w-3 h-3" />
-                </button>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
+            ))
+          )}
+        </div>
+      </AccordionSection>
 
-      {/* Restore Last Published */}
-      <button
-        onClick={() => setShowRestoreConfirm('published')}
-        className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-slate-800/50 hover:bg-slate-700/50 border border-slate-700 rounded-lg text-sm text-slate-300 transition-colors"
-      >
-        <RotateCcw className="w-4 h-4" />
-        <span>{isRTL ? 'استعادة آخر نسخة منشورة' : 'Restore Last Published'}</span>
-      </button>
+      <AccordionSection title="Restore Options" titleAr="خيارات الاستعادة" icon={RotateCcw}>
+        <button
+          onClick={() => setShowRestoreConfirm('published')}
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-slate-800/50 hover:bg-slate-700/50 border border-slate-700 rounded-lg text-sm text-slate-300 transition-colors mb-2"
+        >
+          <RefreshCw className="w-4 h-4" />
+          <span>{isRTL ? 'استعادة آخر نشر' : 'Restore Last Published'}</span>
+        </button>
+        <button
+          onClick={() => setShowRestoreConfirm('defaults')}
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 rounded-lg text-sm text-red-400 transition-colors"
+        >
+          <AlertTriangle className="w-4 h-4" />
+          <span>{isRTL ? 'استعادة الافتراضيات' : 'Restore Defaults'}</span>
+        </button>
+      </AccordionSection>
     </div>
   );
 
-  return (
-    <div className="min-h-screen bg-slate-950 flex">
-      {/* Sidebar */}
-      <aside className={`${sidebarCollapsed ? 'w-16' : 'w-64'} bg-slate-900 border-r border-slate-800 flex flex-col transition-all duration-300`}>
-        {/* Logo */}
-        <div className="p-4 border-b border-slate-800">
-          <button onClick={() => onNavigate('home')} className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center shadow-lg shadow-blue-500/20">
-              <Zap className="w-5 h-5 text-white fill-white" />
-            </div>
-            {!sidebarCollapsed && (
-              <div>
-                <div className="text-sm font-black text-white">HORUS AI</div>
-                <div className="text-[10px] text-slate-500">Admin Studio</div>
+  // Trash Panel
+  const renderTrash = () => (
+    <div className="space-y-4">
+      <AccordionSection title="Deleted Items" titleAr="العناصر المحذوفة" icon={Trash2} defaultOpen badge={`${trash.length}`}>
+        <div className="space-y-2 max-h-64 overflow-y-auto">
+          {trash.length === 0 ? (
+            <p className="text-sm text-slate-500 text-center py-4">{isRTL ? 'سلة المحذوفات فارغة' : 'Trash is empty'}</p>
+          ) : (
+            trash.map((item: TrashItem) => (
+              <div key={item.id} className="p-3 bg-slate-800/50 rounded-lg border border-slate-700/50">
+                <div className="flex items-center justify-between mb-2">
+                  <div>
+                    <span className="text-sm text-white capitalize">{item.type}</span>
+                    <span className="text-xs text-slate-500 ml-2">{item.originalLocation}</span>
+                  </div>
+                  <span className="text-xs text-slate-500">{new Date(item.deletedAt).toLocaleDateString()}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => restoreFromTrash(item.id)}
+                    className="flex-1 px-2 py-1 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded text-xs"
+                  >
+                    {isRTL ? 'استعادة' : 'Restore'}
+                  </button>
+                  <button
+                    onClick={() => permanentDelete(item.id)}
+                    className="px-2 py-1 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded text-xs"
+                  >
+                    {isRTL ? 'حذف نهائي' : 'Delete Forever'}
+                  </button>
+                </div>
               </div>
-            )}
-          </button>
+            ))
+          )}
         </div>
+        {trash.length > 0 && (
+          <button
+            onClick={emptyTrash}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 rounded-lg text-sm text-red-400 transition-colors"
+          >
+            <Trash2 className="w-4 h-4" />
+            <span>{isRTL ? 'إفراغ السلة' : 'Empty Trash'}</span>
+          </button>
+        )}
+      </AccordionSection>
+    </div>
+  );
 
-        {/* Nav Items */}
-        <nav className="flex-1 p-2 space-y-1">
-          {sidebarItems.map(item => (
-            <button
-              key={item.id}
-              onClick={() => setActiveTab(item.id as EditorTab)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
-                activeTab === item.id
-                  ? 'bg-blue-500/20 text-blue-400'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
-              }`}
-            >
-              <item.icon className="w-5 h-5 shrink-0" />
-              {!sidebarCollapsed && (
-                <span className="text-sm font-medium">{isRTL ? item.labelAr : item.label}</span>
-              )}
-            </button>
-          ))}
-        </nav>
+  // Submissions/Inbox Panel
+  const renderSubmissions = () => (
+    <div className="space-y-4">
+      <AccordionSection 
+        title="Contact Submissions" 
+        titleAr="رسائل التواصل" 
+        icon={Mail} 
+        defaultOpen 
+        badge={submissions.filter(s => s.status === 'new').length > 0 ? `${submissions.filter(s => s.status === 'new').length}` : undefined}
+      >
+        <div className="space-y-2 max-h-64 overflow-y-auto">
+          {submissions.length === 0 ? (
+            <p className="text-sm text-slate-500 text-center py-4">{isRTL ? 'لا توجد رسائل' : 'No submissions yet'}</p>
+          ) : (
+            submissions.map((sub: FormSubmission) => (
+              <div key={sub.id} className="p-3 bg-slate-800/50 rounded-lg border border-slate-700/50">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-white">{sub.data.email || 'No email'}</span>
+                  <StatusBadge status={sub.status} />
+                </div>
+                <p className="text-xs text-slate-400 mb-2 line-clamp-2">{sub.data.message || 'No message'}</p>
+                <div className="flex items-center gap-2">
+                  <SelectField
+                    label=""
+                    labelAr=""
+                    value={sub.status}
+                    onChange={(v) => updateSubmissionStatus(sub.id, v as FormSubmission['status'])}
+                    options={[
+                      { value: 'new', label: 'New', labelAr: 'جديد' },
+                      { value: 'in_progress', label: 'In Progress', labelAr: 'قيد التقدم' },
+                      { value: 'resolved', label: 'Resolved', labelAr: 'تم الحل' },
+                    ]}
+                  />
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </AccordionSection>
+    </div>
+  );
 
-        {/* Collapse Toggle */}
-        <div className="p-2 border-t border-slate-800">
+  // Settings Panel
+  const renderSettings = () => (
+    <div className="space-y-4">
+      <AccordionSection title="Admin Entry" titleAr="دخول المدير" icon={Shield} defaultOpen>
+        <ToggleRow
+          label="Show Admin Entry in Navbar"
+          labelAr="إظهار زر المدير في القائمة"
+          checked={draftConfig.navbar.showAdminEntry || false}
+          onChange={(v) => updateDraft('navbar.showAdminEntry', v)}
+        />
+        <ToggleRow
+          label="Show Admin Entry in Footer"
+          labelAr="إظهار زر المدير في التذييل"
+          checked={draftConfig.footer.showAdminEntry || false}
+          onChange={(v) => updateDraft('footer.showAdminEntry', v)}
+        />
+        <SelectField
+          label="Admin Entry Position"
+          labelAr="موقع زر المدير"
+          value={draftConfig.navbar.adminEntryPosition || 'hidden'}
+          onChange={(v) => updateDraft('navbar.adminEntryPosition', v)}
+          options={[
+            { value: 'navbar', label: 'Navbar', labelAr: 'القائمة' },
+            { value: 'footer', label: 'Footer', labelAr: 'التذييل' },
+            { value: 'hidden', label: 'Hidden', labelAr: 'مخفي' },
+          ]}
+        />
+      </AccordionSection>
+
+      <AccordionSection title="Export / Import" titleAr="تصدير / استيراد" icon={UploadCloud}>
+        <button
+          onClick={handleExport}
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-slate-800/50 hover:bg-slate-700/50 border border-slate-700 rounded-lg text-sm text-slate-300 transition-colors mb-2"
+        >
+          <Download className="w-4 h-4" />
+          <span>{isRTL ? 'تصدير الإعدادات' : 'Export Settings'}</span>
+        </button>
+        <label className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-slate-800/50 hover:bg-slate-700/50 border border-slate-700 rounded-lg text-sm text-slate-300 transition-colors cursor-pointer">
+          <Upload className="w-4 h-4" />
+          <span>{isRTL ? 'استيراد الإعدادات' : 'Import Settings'}</span>
+          <input type="file" accept=".json" onChange={handleImport} className="hidden" />
+        </label>
+      </AccordionSection>
+
+      <AccordionSection title="Danger Zone" titleAr="منطقة الخطر" icon={AlertTriangle}>
+        <button
+          onClick={() => setShowRestoreConfirm('defaults')}
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 rounded-lg text-sm text-red-400 transition-colors"
+        >
+          <AlertTriangle className="w-4 h-4" />
+          <span>{isRTL ? 'إعادة تعيين كل شيء' : 'Reset Everything'}</span>
+        </button>
+      </AccordionSection>
+    </div>
+  );
+
+  // Activity Panel
+  const renderActivity = () => (
+    <div className="space-y-4">
+      <AccordionSection title="Activity Log" titleAr="سجل النشاط" icon={Activity} defaultOpen>
+        <div className="space-y-2 max-h-96 overflow-y-auto">
+          {activityLog.length === 0 ? (
+            <p className="text-sm text-slate-500 text-center py-4">{isRTL ? 'لا يوجد نشاط' : 'No activity yet'}</p>
+          ) : (
+            activityLog.slice().reverse().map(entry => (
+              <div key={entry.id} className="p-3 bg-slate-800/50 rounded-lg border border-slate-700/50">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-sm font-medium text-white capitalize">{entry.action}</span>
+                  <span className="text-xs text-slate-500">{new Date(entry.timestamp).toLocaleString()}</span>
+                </div>
+                <p className="text-xs text-slate-400">{entry.target}</p>
+                {entry.details && <p className="text-xs text-slate-500 mt-1">{entry.details}</p>}
+              </div>
+            ))
+          )}
+        </div>
+      </AccordionSection>
+    </div>
+  );
+
+  // Render tab content based on active tab
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'overview': return renderOverview();
+      case 'pages': return renderPages();
+      case 'brand': return renderBrand();
+      case 'dashboard': return renderDashboard();
+      case 'reports': return renderReports();
+      case 'ai-chat': return renderAIChat();
+      case 'team': return renderTeam();
+      case 'visibility': return renderVisibility();
+      case 'pricing': return renderPricing();
+      case 'snapshots': return renderSnapshots();
+      case 'trash': return renderTrash();
+      case 'submissions': return renderSubmissions();
+      case 'settings': return renderSettings();
+      case 'activity': return renderActivity();
+      default: return renderOverview();
+    }
+  };
+
+  // ============================================================================
+  // MAIN RENDER
+  // ============================================================================
+
+  return (
+    <div className="min-h-screen bg-slate-950 flex" dir={isRTL ? 'rtl' : 'ltr'}>
+      {/* Sidebar */}
+      <div className={`${sidebarCollapsed ? 'w-16' : 'w-64'} bg-slate-900 border-r border-slate-800 flex flex-col transition-all duration-300`}>
+        {/* Logo */}
+        <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+          {!sidebarCollapsed && (
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">
+                <Zap className="w-5 h-5 text-white" />
+              </div>
+              <span className="font-bold text-white">Admin Studio</span>
+            </div>
+          )}
           <button
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2 text-slate-400 hover:text-white hover:bg-slate-800/50 rounded-lg transition-colors"
+            className="p-1.5 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors"
           >
-            {sidebarCollapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
+            {sidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
           </button>
         </div>
-      </aside>
+
+        {/* Search */}
+        {!sidebarCollapsed && (
+          <div className="p-3 border-b border-slate-800">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={isRTL ? 'بحث...' : 'Search...'}
+                className="w-full pl-9 pr-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+              />
+            </div>
+            {searchQuery && searchResults().length > 0 && (
+              <div className="absolute mt-1 w-56 bg-slate-800 border border-slate-700 rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto">
+                {searchResults().map(result => (
+                  <button
+                    key={result.id}
+                    onClick={() => {
+                      setSearchQuery('');
+                      // Navigate to result
+                    }}
+                    className="w-full px-3 py-2 text-left text-sm text-white hover:bg-slate-700"
+                  >
+                    <span className="text-xs text-slate-500 mr-2">{result.type}</span>
+                    {result.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Nav Sections */}
+        <div className="flex-1 overflow-y-auto py-2">
+          {sidebarSections.map((section, sIdx) => (
+            <div key={sIdx} className="mb-4">
+              {!sidebarCollapsed && (
+                <div className="px-4 py-1">
+                  <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">{section.title}</span>
+                </div>
+              )}
+              <div className="space-y-0.5 px-2">
+                {section.items.map(item => (
+                  <button
+                    key={item.id}
+                    onClick={() => setActiveTab(item.id as MainTab)}
+                    className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} gap-2 px-3 py-2 rounded-lg transition-colors ${
+                      activeTab === item.id 
+                        ? 'bg-blue-500/20 text-blue-400' 
+                        : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                    }`}
+                    title={sidebarCollapsed ? (isRTL ? item.labelAr : item.label) : undefined}
+                  >
+                    <div className="flex items-center gap-2">
+                      <item.icon className="w-4 h-4" />
+                      {!sidebarCollapsed && <span className="text-sm">{isRTL ? item.labelAr : item.label}</span>}
+                    </div>
+                    {!sidebarCollapsed && item.badge && (
+                      <span className="px-1.5 py-0.5 bg-blue-500/20 text-blue-400 text-xs rounded-full">{item.badge}</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Back to Site */}
+        <div className="p-3 border-t border-slate-800">
+          <button
+            onClick={() => onNavigate('home')}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-slate-800/50 hover:bg-slate-700/50 border border-slate-700 rounded-lg text-sm text-slate-300 transition-colors"
+          >
+            <ExternalLink className="w-4 h-4" />
+            {!sidebarCollapsed && <span>{isRTL ? 'العودة للموقع' : 'Back to Site'}</span>}
+          </button>
+        </div>
+      </div>
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
         {/* Top Bar */}
-        <header className="h-14 bg-slate-900/50 border-b border-slate-800 flex items-center justify-between px-4">
-          {/* Left: Title */}
-          <div className="flex items-center gap-3">
-            <h1 className="text-lg font-bold text-white">
-              {sidebarItems.find(i => i.id === activeTab)?.[isRTL ? 'labelAr' : 'label']}
+        <div className="h-14 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-4">
+          <div className="flex items-center gap-4">
+            <h1 className="text-lg font-semibold text-white capitalize">
+              {sidebarSections.flatMap(s => s.items).find(i => i.id === activeTab)?.label || 'Admin Studio'}
             </h1>
             {hasUnsavedChanges && (
-              <span className="px-2 py-0.5 bg-amber-500/20 text-amber-400 text-xs font-medium rounded-full">
+              <span className="px-2 py-0.5 bg-amber-500/20 text-amber-400 text-xs rounded-full">
                 {isRTL ? 'تغييرات غير محفوظة' : 'Unsaved Changes'}
               </span>
             )}
           </div>
 
-          {/* Right: Actions */}
           <div className="flex items-center gap-2">
-            {/* Device Preview */}
-            <div className="flex items-center gap-1 p-1 bg-slate-800/50 rounded-lg">
+            {/* Preview Device Toggle */}
+            <div className="flex items-center gap-1 p-1 bg-slate-800 rounded-lg">
               <button
                 onClick={() => setPreviewDevice('desktop')}
-                className={`p-1.5 rounded ${previewDevice === 'desktop' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-white'}`}
+                className={`p-1.5 rounded ${previewDevice === 'desktop' ? 'bg-slate-700 text-white' : 'text-slate-500 hover:text-white'}`}
               >
                 <Monitor className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setPreviewDevice('tablet')}
-                className={`p-1.5 rounded ${previewDevice === 'tablet' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-white'}`}
+                className={`p-1.5 rounded ${previewDevice === 'tablet' ? 'bg-slate-700 text-white' : 'text-slate-500 hover:text-white'}`}
               >
                 <Tablet className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setPreviewDevice('mobile')}
-                className={`p-1.5 rounded ${previewDevice === 'mobile' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-white'}`}
+                className={`p-1.5 rounded ${previewDevice === 'mobile' ? 'bg-slate-700 text-white' : 'text-slate-500 hover:text-white'}`}
               >
                 <Smartphone className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Preview Toggle */}
+            {/* Preview Mode Toggle */}
             <button
               onClick={() => setPreviewMode(!isPreviewMode)}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                isPreviewMode
-                  ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                  : 'bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700'
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                isPreviewMode 
+                  ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
+                  : 'bg-slate-800 text-slate-400 border border-slate-700 hover:text-white'
               }`}
             >
-              {isPreviewMode ? <Eye className="w-4 h-4" /> : <Edit3 className="w-4 h-4" />}
-              <span>{isPreviewMode ? (isRTL ? 'معاينة' : 'Preview') : (isRTL ? 'تعديل' : 'Edit')}</span>
+              {isPreviewMode ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+              <span>{isPreviewMode ? (isRTL ? 'معاينة' : 'Preview') : (isRTL ? 'تحرير' : 'Edit')}</span>
+            </button>
+
+            {/* Discard */}
+            <button
+              onClick={() => hasUnsavedChanges ? setShowDiscardConfirm(true) : null}
+              disabled={!hasUnsavedChanges}
+              className="flex items-center gap-2 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-sm text-slate-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <X className="w-4 h-4" />
+              <span>{isRTL ? 'تجاهل' : 'Discard'}</span>
             </button>
 
             {/* Save Draft */}
             <button
               onClick={saveDraft}
-              className="flex items-center gap-2 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-sm text-slate-300 font-medium transition-colors"
+              className="flex items-center gap-2 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-sm text-slate-300 transition-colors"
             >
               <Save className="w-4 h-4" />
-              <span>{isRTL ? 'حفظ المسودة' : 'Save Draft'}</span>
+              <span>{isRTL ? 'حفظ' : 'Save'}</span>
             </button>
-
-            {/* Discard */}
-            {hasUnsavedChanges && (
-              <button
-                onClick={discardDraft}
-                className="flex items-center gap-2 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-sm text-slate-300 font-medium transition-colors"
-              >
-                <X className="w-4 h-4" />
-                <span>{isRTL ? 'تجاهل' : 'Discard'}</span>
-              </button>
-            )}
 
             {/* Publish */}
             <button
               onClick={() => setShowPublishConfirm(true)}
               disabled={!hasUnsavedChanges}
-              className="flex items-center gap-2 px-4 py-1.5 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-sm text-white font-medium transition-colors"
+              className="flex items-center gap-2 px-4 py-1.5 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-sm text-white transition-colors"
             >
               <Upload className="w-4 h-4" />
               <span>{isRTL ? 'نشر' : 'Publish'}</span>
             </button>
           </div>
-        </header>
+        </div>
 
         {/* Content Area */}
-        <div className="flex-1 flex">
+        <div className="flex-1 overflow-hidden flex">
           {/* Inspector Panel */}
-          <aside className="w-80 bg-slate-900/30 border-r border-slate-800 overflow-y-auto">
-            <div className="p-4 space-y-4">
-              {activeTab === 'pages' && renderPageEditor()}
-              {activeTab === 'dashboard' && renderDashboardEditor()}
-              {activeTab === 'reports' && renderReportsEditor()}
-              {activeTab === 'ai-chat' && renderAIChatEditor()}
-              {activeTab === 'global' && renderGlobalEditor()}
-              {activeTab === 'snapshots' && renderSnapshots()}
-            </div>
-          </aside>
+          <div className="w-80 bg-slate-900/50 border-r border-slate-800 overflow-y-auto p-4">
+            {renderTabContent()}
+          </div>
 
           {/* Preview Area */}
-          <main className="flex-1 bg-slate-950 p-6 overflow-auto">
-            <div className={`mx-auto bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-2xl ${
-              previewDevice === 'desktop' ? 'max-w-6xl' : previewDevice === 'tablet' ? 'max-w-2xl' : 'max-w-sm'
-            }`}>
-              {/* Preview Header */}
-              <div className="flex items-center gap-2 px-4 py-2 bg-slate-800/50 border-b border-slate-700">
+          <div className="flex-1 p-6 overflow-auto">
+            <div 
+              className={`mx-auto bg-slate-900 rounded-xl border border-slate-800 overflow-hidden transition-all duration-300 ${
+                previewDevice === 'desktop' ? 'w-full' : 
+                previewDevice === 'tablet' ? 'max-w-2xl' : 
+                'max-w-sm'
+              }`}
+            >
+              <div className="p-4 bg-slate-800/50 border-b border-slate-700 flex items-center gap-2">
                 <div className="flex gap-1.5">
-                  <div className="w-3 h-3 rounded-full bg-red-500/80" />
-                  <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
-                  <div className="w-3 h-3 rounded-full bg-green-500/80" />
+                  <div className="w-3 h-3 rounded-full bg-red-500" />
+                  <div className="w-3 h-3 rounded-full bg-yellow-500" />
+                  <div className="w-3 h-3 rounded-full bg-green-500" />
                 </div>
-                <div className="flex-1 mx-2">
-                  <div className="px-3 py-1 bg-slate-700/50 rounded text-xs text-slate-400 text-center">
-                    horus-ai.app/{activePage === 'home' ? '' : activePage}
+                <div className="flex-1 mx-4">
+                  <div className="px-3 py-1 bg-slate-700 rounded text-xs text-slate-400 text-center">
+                    {isPreviewMode ? 'Published Preview' : 'Draft Preview'}
                   </div>
                 </div>
               </div>
-
-              {/* Preview Content */}
-              <div className="h-[600px] overflow-auto bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-                <div className="p-8 text-center">
-                  <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center">
-                    <Zap className="w-8 h-8 text-white fill-white" />
+              <div className="aspect-video bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center">
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <Zap className="w-8 h-8 text-white" />
                   </div>
-                  <h2 className="text-2xl font-bold text-white mb-2">
-                    {isPreviewMode 
-                      ? (isRTL ? 'وضع المعاينة' : 'Preview Mode')
-                      : (isRTL ? 'وضع التعديل' : 'Edit Mode')
-                    }
-                  </h2>
-                  <p className="text-slate-400 text-sm mb-4">
-                    {isPreviewMode
-                      ? (isRTL ? 'معاينة التغييرات المنشورة' : 'Viewing published changes')
-                      : (isRTL ? 'تعديل المسودة الحالية' : 'Editing current draft')
-                    }
+                  <h3 className="text-lg font-bold text-white mb-1">{draftConfig.brand.name}</h3>
+                  <p className="text-sm text-slate-400">
+                    {isRTL ? 'معاينة التغييرات تظهر هنا' : 'Changes preview appears here'}
                   </p>
-                  <div className="p-4 bg-slate-800/50 rounded-xl border border-slate-700/50 text-left">
-                    <div className="text-xs text-slate-500 mb-2">{isRTL ? 'الصفحة النشطة:' : 'Active Page:'}</div>
-                    <div className="text-sm text-white font-medium">
-                      {pageOptions.find(p => p.value === activePage)?.[isRTL ? 'labelAr' : 'label']}
-                    </div>
+                  <div className="mt-4 flex items-center justify-center gap-2">
+                    <StatusBadge status={isPreviewMode ? 'published' : 'draft'} />
+                    <span className="text-xs text-slate-500">{previewDevice}</span>
                   </div>
                 </div>
               </div>
             </div>
-          </main>
+          </div>
         </div>
       </div>
 
-      {/* Publish Confirmation Modal */}
+      {/* Modals */}
       {showPublishConfirm && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-900 rounded-2xl border border-slate-700 p-6 max-w-md w-full shadow-2xl">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
-                <Upload className="w-5 h-5 text-blue-400" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-white">{isRTL ? 'نشر التغييرات' : 'Publish Changes'}</h3>
-                <p className="text-sm text-slate-400">{isRTL ? 'هل أنت متأكد من نشر هذه التغييرات؟' : 'Are you sure you want to publish these changes?'}</p>
-              </div>
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowPublishConfirm(false)}
-                className="flex-1 px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-sm text-slate-300 font-medium transition-colors"
-              >
-                {isRTL ? 'إلغاء' : 'Cancel'}
-              </button>
-              <button
-                onClick={handlePublish}
-                className="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 rounded-lg text-sm text-white font-medium transition-colors"
-              >
-                {isRTL ? 'نشر' : 'Publish'}
-              </button>
-            </div>
-          </div>
-        </div>
+        <ConfirmModal
+          title={isRTL ? 'نشر التغييرات' : 'Publish Changes'}
+          message={isRTL ? 'هل أنت متأكد من نشر جميع التغييرات؟' : 'Are you sure you want to publish all changes?'}
+          onConfirm={handlePublish}
+          onCancel={() => setShowPublishConfirm(false)}
+          confirmLabel={isRTL ? 'نشر' : 'Publish'}
+        />
       )}
 
-      {/* Restore Confirmation Modal */}
       {showRestoreConfirm && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-900 rounded-2xl border border-slate-700 p-6 max-w-md w-full shadow-2xl">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center">
-                <RotateCcw className="w-5 h-5 text-amber-400" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-white">{isRTL ? 'استعادة' : 'Restore'}</h3>
-                <p className="text-sm text-slate-400">{isRTL ? 'سيتم استبدال التغييرات الحالية' : 'Current changes will be replaced'}</p>
-              </div>
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowRestoreConfirm(null)}
-                className="flex-1 px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-sm text-slate-300 font-medium transition-colors"
-              >
-                {isRTL ? 'إلغاء' : 'Cancel'}
-              </button>
-              <button
-                onClick={() => handleRestore(showRestoreConfirm)}
-                className="flex-1 px-4 py-2 bg-amber-500 hover:bg-amber-600 rounded-lg text-sm text-white font-medium transition-colors"
-              >
-                {isRTL ? 'استعادة' : 'Restore'}
-              </button>
-            </div>
-          </div>
-        </div>
+        <ConfirmModal
+          title={isRTL ? 'استعادة' : 'Restore'}
+          message={isRTL ? 'هل أنت متأكد من الاستعادة؟ سيتم فقدان التغييرات الحالية.' : 'Are you sure? Current changes will be lost.'}
+          onConfirm={() => handleRestore(showRestoreConfirm)}
+          onCancel={() => setShowRestoreConfirm(null)}
+          confirmLabel={isRTL ? 'استعادة' : 'Restore'}
+          danger
+        />
+      )}
+
+      {showDiscardConfirm && (
+        <ConfirmModal
+          title={isRTL ? 'تجاهل التغييرات' : 'Discard Changes'}
+          message={isRTL ? 'هل أنت متأكد من تجاهل جميع التغييرات غير المحفوظة؟' : 'Are you sure you want to discard all unsaved changes?'}
+          onConfirm={() => {
+            discardDraft();
+            setShowDiscardConfirm(false);
+          }}
+          onCancel={() => setShowDiscardConfirm(false)}
+          confirmLabel={isRTL ? 'تجاهل' : 'Discard'}
+          danger
+        />
+      )}
+
+      {showUnsavedWarning && (
+        <ConfirmModal
+          title={isRTL ? 'تغييرات غير محفوظة' : 'Unsaved Changes'}
+          message={isRTL ? 'لديك تغييرات غير محفوظة. هل تريد المتابعة؟' : 'You have unsaved changes. Do you want to continue?'}
+          onConfirm={() => setShowUnsavedWarning(false)}
+          onCancel={() => setShowUnsavedWarning(false)}
+          confirmLabel={isRTL ? 'متابعة' : 'Continue'}
+          danger
+        />
       )}
     </div>
   );
