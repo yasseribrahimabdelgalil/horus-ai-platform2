@@ -2,15 +2,17 @@ import { useState, useCallback, useEffect } from 'react';
 import { 
   Zap, ChevronLeft, ChevronRight, Eye, EyeOff, Save, Upload, RotateCcw, 
   History, Copy, Trash2, Plus, GripVertical, Settings, Palette, Type, 
-  Layout, BarChart3, FileText, MessageSquare, Navigation, 
+  BarChart3, FileText, MessageSquare, Navigation, 
   Image, Layers, Box, Sparkles, Monitor, Tablet, Smartphone,
   ChevronDown, ChevronUp, Check, X, RefreshCw, Clock,
-  Users, Shield, CreditCard, Globe, Mail, Bell, Search,
+  Users, Shield, CreditCard, Globe, Mail, Search,
   Star, StarOff, Download, UploadCloud, AlertTriangle, Info,
   Lock, Unlock, ExternalLink, Tag, DollarSign, FileCode,
-  Megaphone, Database, Activity, Archive, Link, Hash, Briefcase,
-  Building2, User, HelpCircle, BookOpen, Scale, Folder,
-  PieChart, TrendingUp, Table, Grid3X3, ToggleLeft, ToggleRight
+  Megaphone, Database, Activity, Link, 
+  User, HelpCircle, Scale,
+  TrendingUp, Table, Grid3X3, ToggleLeft,
+  Camera, ImagePlus, FileImage, Trash, CornerUpLeft,
+  MousePointer, Columns, Square, ArrowRight, Home, Sliders
 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { 
@@ -24,7 +26,12 @@ import {
   TrashItem,
   PolicyPage,
   PricingPlan,
-  BlockPreset
+  BlockPreset,
+  NavItemConfig,
+  FooterColumnConfig,
+  RedirectRule,
+  MediaAsset,
+  FormFieldConfig
 } from '../contexts/AdminContext';
 
 interface AdminProps {
@@ -433,6 +440,7 @@ export function Admin({ onNavigate }: AdminProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [activeTab, setActiveTab] = useState<MainTab>('overview');
   const [activePage, setActivePage] = useState('home');
+  const [previewPage, setPreviewPage] = useState('home');
   const [snapshotName, setSnapshotName] = useState('');
   const [showPublishConfirm, setShowPublishConfirm] = useState(false);
   const [showRestoreConfirm, setShowRestoreConfirm] = useState<string | null>(null);
@@ -970,25 +978,118 @@ export function Admin({ onNavigate }: AdminProps) {
 
       <AccordionSection title="Typography" titleAr="الخطوط" icon={Type}>
         <InputField
-          label="Body Font"
-          labelAr="خط النص"
+          label="Body Font Family"
+          labelAr="خط النص الأساسي"
           value={draftConfig.brand.fontFamily}
           onChange={(v) => updateDraft('brand.fontFamily', v)}
+          placeholder="Inter, system-ui, sans-serif"
         />
         <InputField
-          label="Heading Font"
+          label="Heading Font Family"
           labelAr="خط العناوين"
           value={draftConfig.brand.headingFontFamily}
           onChange={(v) => updateDraft('brand.headingFontFamily', v)}
+          placeholder="Inter, system-ui, sans-serif"
+        />
+        <SelectField
+          label="Base Font Size"
+          labelAr="حجم الخط الأساسي"
+          value={draftConfig.hero.headline.fontSize || '4xl'}
+          onChange={(v) => updateDraft('hero.headline.fontSize', v)}
+          options={[
+            { value: 'sm', label: '14px (sm)', labelAr: '14 بكسل' },
+            { value: 'base', label: '16px (base)', labelAr: '16 بكسل' },
+            { value: 'lg', label: '18px (lg)', labelAr: '18 بكسل' },
+            { value: 'xl', label: '20px (xl)', labelAr: '20 بكسل' },
+            { value: '2xl', label: '24px (2xl)', labelAr: '24 بكسل' },
+            { value: '3xl', label: '30px (3xl)', labelAr: '30 بكسل' },
+            { value: '4xl', label: '36px (4xl)', labelAr: '36 بكسل' },
+            { value: '5xl', label: '48px (5xl)', labelAr: '48 بكسل' },
+          ]}
+        />
+        <SelectField
+          label="Heading Font Weight"
+          labelAr="سمك خط العنوان"
+          value={draftConfig.hero.headline.fontWeight || 'bold'}
+          onChange={(v) => updateDraft('hero.headline.fontWeight', v)}
+          options={[
+            { value: 'normal', label: 'Normal (400)', labelAr: 'عادي' },
+            { value: 'medium', label: 'Medium (500)', labelAr: 'متوسط' },
+            { value: 'semibold', label: 'Semibold (600)', labelAr: 'شبه سميك' },
+            { value: 'bold', label: 'Bold (700)', labelAr: 'سميك' },
+            { value: 'extrabold', label: 'Extra Bold (800)', labelAr: 'سميك جداً' },
+          ]}
+        />
+        <SelectField
+          label="Line Height"
+          labelAr="ارتفاع السطر"
+          value="relaxed"
+          onChange={() => {}}
+          options={[
+            { value: 'none', label: '1 (none)', labelAr: '1' },
+            { value: 'tight', label: '1.25 (tight)', labelAr: 'ضيق' },
+            { value: 'snug', label: '1.375 (snug)', labelAr: 'متوسط' },
+            { value: 'normal', label: '1.5 (normal)', labelAr: 'عادي' },
+            { value: 'relaxed', label: '1.625 (relaxed)', labelAr: 'مريح' },
+            { value: 'loose', label: '2 (loose)', labelAr: 'واسع' },
+          ]}
+        />
+        <SelectField
+          label="Letter Spacing"
+          labelAr="تباعد الحروف"
+          value="normal"
+          onChange={() => {}}
+          options={[
+            { value: 'tighter', label: '-0.05em (tighter)', labelAr: 'أضيق' },
+            { value: 'tight', label: '-0.025em (tight)', labelAr: 'ضيق' },
+            { value: 'normal', label: '0 (normal)', labelAr: 'عادي' },
+            { value: 'wide', label: '0.025em (wide)', labelAr: 'واسع' },
+            { value: 'wider', label: '0.05em (wider)', labelAr: 'أوسع' },
+            { value: 'widest', label: '0.1em (widest)', labelAr: 'الأوسع' },
+          ]}
         />
       </AccordionSection>
 
-      <AccordionSection title="Style" titleAr="الأنماط" icon={Box}>
+      <AccordionSection title="Button Styles" titleAr="أنماط الأزرار" icon={Square}>
+        <SelectField
+          label="Button Size"
+          labelAr="حجم الزر"
+          value={draftConfig.hero.ctaButton.size || 'lg'}
+          onChange={(v) => updateDraft('hero.ctaButton.size', v)}
+          options={[
+            { value: 'sm', label: 'Small', labelAr: 'صغير' },
+            { value: 'md', label: 'Medium', labelAr: 'متوسط' },
+            { value: 'lg', label: 'Large', labelAr: 'كبير' },
+          ]}
+        />
+        <SelectField
+          label="Button Variant"
+          labelAr="نمط الزر"
+          value={draftConfig.hero.ctaButton.variant || 'primary'}
+          onChange={(v) => updateDraft('hero.ctaButton.variant', v)}
+          options={[
+            { value: 'primary', label: 'Primary (Filled)', labelAr: 'أساسي' },
+            { value: 'secondary', label: 'Secondary', labelAr: 'ثانوي' },
+            { value: 'outline', label: 'Outline', labelAr: 'محدد' },
+            { value: 'ghost', label: 'Ghost', labelAr: 'شفاف' },
+          ]}
+        />
         <InputField
-          label="Border Radius"
-          labelAr="انحناء الحدود"
+          label="Button Border Radius"
+          labelAr="انحناء حدود الزر"
           value={draftConfig.brand.borderRadius}
           onChange={(v) => updateDraft('brand.borderRadius', v)}
+          placeholder="12px"
+        />
+      </AccordionSection>
+
+      <AccordionSection title="Card & Container Styles" titleAr="أنماط البطاقات" icon={Box}>
+        <InputField
+          label="Card Border Radius"
+          labelAr="انحناء حدود البطاقة"
+          value={draftConfig.brand.borderRadius}
+          onChange={(v) => updateDraft('brand.borderRadius', v)}
+          placeholder="12px"
         />
         <SelectField
           label="Shadow Intensity"
@@ -1004,6 +1105,18 @@ export function Admin({ onNavigate }: AdminProps) {
           ]}
         />
         <SelectField
+          label="Icon Size"
+          labelAr="حجم الأيقونات"
+          value="md"
+          onChange={() => {}}
+          options={[
+            { value: 'sm', label: '16px', labelAr: '16 بكسل' },
+            { value: 'md', label: '20px', labelAr: '20 بكسل' },
+            { value: 'lg', label: '24px', labelAr: '24 بكسل' },
+            { value: 'xl', label: '32px', labelAr: '32 بكسل' },
+          ]}
+        />
+        <SelectField
           label="Icon Style"
           labelAr="نمط الأيقونات"
           value={draftConfig.brand.iconStyle}
@@ -1014,6 +1127,84 @@ export function Admin({ onNavigate }: AdminProps) {
             { value: 'duotone', label: 'Duotone', labelAr: 'ثنائي' },
           ]}
         />
+      </AccordionSection>
+
+      <AccordionSection title="Spacing & Layout" titleAr="التباعد والتخطيط" icon={Sliders}>
+        <SelectField
+          label="Section Spacing"
+          labelAr="تباعد الأقسام"
+          value="lg"
+          onChange={() => {}}
+          options={[
+            { value: 'sm', label: '16px', labelAr: '16 بكسل' },
+            { value: 'md', label: '24px', labelAr: '24 بكسل' },
+            { value: 'lg', label: '32px', labelAr: '32 بكسل' },
+            { value: 'xl', label: '48px', labelAr: '48 بكسل' },
+            { value: '2xl', label: '64px', labelAr: '64 بكسل' },
+          ]}
+        />
+        <SelectField
+          label="Component Gap"
+          labelAr="الفجوة بين العناصر"
+          value="md"
+          onChange={() => {}}
+          options={[
+            { value: 'sm', label: '8px', labelAr: '8 بكسل' },
+            { value: 'md', label: '16px', labelAr: '16 بكسل' },
+            { value: 'lg', label: '24px', labelAr: '24 بكسل' },
+            { value: 'xl', label: '32px', labelAr: '32 بكسل' },
+          ]}
+        />
+        <SelectField
+          label="Content Alignment"
+          labelAr="محاذاة المحتوى"
+          value="center"
+          onChange={() => {}}
+          options={[
+            { value: 'left', label: 'Left', labelAr: 'يسار' },
+            { value: 'center', label: 'Center', labelAr: 'وسط' },
+            { value: 'right', label: 'Right', labelAr: 'يمين' },
+          ]}
+        />
+        <SelectField
+          label="Container Max Width"
+          labelAr="أقصى عرض للحاوية"
+          value="7xl"
+          onChange={() => {}}
+          options={[
+            { value: '4xl', label: '896px (4xl)', labelAr: '896 بكسل' },
+            { value: '5xl', label: '1024px (5xl)', labelAr: '1024 بكسل' },
+            { value: '6xl', label: '1152px (6xl)', labelAr: '1152 بكسل' },
+            { value: '7xl', label: '1280px (7xl)', labelAr: '1280 بكسل' },
+            { value: 'full', label: 'Full Width', labelAr: 'العرض الكامل' },
+          ]}
+        />
+      </AccordionSection>
+
+      <AccordionSection title="Responsive Breakpoints" titleAr="نقاط التجاوب" icon={Smartphone}>
+        <div className="p-3 bg-slate-800/30 rounded-lg space-y-2">
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-slate-400 flex items-center gap-2">
+              <Smartphone className="w-3 h-3" />
+              {isRTL ? 'موبايل' : 'Mobile'}
+            </span>
+            <span className="text-slate-300">{'< 640px'}</span>
+          </div>
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-slate-400 flex items-center gap-2">
+              <Tablet className="w-3 h-3" />
+              {isRTL ? 'تابلت' : 'Tablet'}
+            </span>
+            <span className="text-slate-300">640px - 1024px</span>
+          </div>
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-slate-400 flex items-center gap-2">
+              <Monitor className="w-3 h-3" />
+              {isRTL ? 'سطح المكتب' : 'Desktop'}
+            </span>
+            <span className="text-slate-300">{'>= 1024px'}</span>
+          </div>
+        </div>
       </AccordionSection>
     </div>
   );
@@ -1916,6 +2107,80 @@ export function Admin({ onNavigate }: AdminProps) {
             { value: 'hidden', label: 'Hidden', labelAr: 'مخفي' },
           ]}
         />
+        <InputField
+          label="Custom Admin Route"
+          labelAr="مسار المدير المخصص"
+          value="/admin"
+          onChange={() => {}}
+          placeholder="/admin"
+          disabled
+        />
+      </AccordionSection>
+
+      <AccordionSection title="Admin Access" titleAr="صلاحيات المدير" icon={Lock}>
+        <div className="p-3 bg-slate-800/30 rounded-lg border border-slate-700/50 mb-3">
+          <div className="flex items-center gap-2 mb-2">
+            <Shield className="w-4 h-4 text-blue-400" />
+            <span className="text-sm font-medium text-white">{isRTL ? 'قائمة بريد المديرين' : 'Admin Emails List'}</span>
+          </div>
+          <p className="text-xs text-slate-400 mb-2">
+            {isRTL ? 'المستخدمون في هذه القائمة يمكنهم الوصول للأدمن' : 'Users in this list can access the admin panel'}
+          </p>
+          <div className="space-y-1">
+            {draftConfig.adminEmails.length === 0 ? (
+              <p className="text-xs text-slate-500">{isRTL ? 'لا يوجد بريد مضاف' : 'No emails added yet'}</p>
+            ) : (
+              draftConfig.adminEmails.map((email: string, idx: number) => (
+                <div key={idx} className="flex items-center justify-between p-2 bg-slate-800 rounded">
+                  <span className="text-xs text-white">{email}</span>
+                  <button
+                    onClick={() => {
+                      const emails = draftConfig.adminEmails.filter((_: string, i: number) => i !== idx);
+                      updateDraft('adminEmails', emails);
+                    }}
+                    className="text-slate-500 hover:text-red-400"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <input
+            type="email"
+            placeholder={isRTL ? 'أدخل بريد المدير' : 'Enter admin email'}
+            className="flex-1 px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white placeholder-slate-500"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                const input = e.target as HTMLInputElement;
+                if (input.value.trim() && input.value.includes('@')) {
+                  updateDraft('adminEmails', [...draftConfig.adminEmails, input.value.trim()]);
+                  input.value = '';
+                }
+              }
+            }}
+          />
+        </div>
+      </AccordionSection>
+
+      <AccordionSection title="Permission Roles" titleAr="أدوار الصلاحيات" icon={Users}>
+        <div className="space-y-2">
+          {roleOptions.map(role => (
+            <div key={role.value} className="flex items-center justify-between p-2 bg-slate-800/50 rounded-lg">
+              <div>
+                <span className="text-sm text-white">{isRTL ? role.labelAr : role.label}</span>
+                <p className="text-xs text-slate-500">
+                  {draftConfig.permissionMatrix[role.value]?.length || 0} {isRTL ? 'صلاحيات' : 'permissions'}
+                </p>
+              </div>
+              <button className="px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs text-slate-300">
+                {isRTL ? 'تعديل' : 'Edit'}
+              </button>
+            </div>
+          ))}
+        </div>
       </AccordionSection>
 
       <AccordionSection title="Export / Import" titleAr="تصدير / استيراد" icon={UploadCloud}>
@@ -1931,9 +2196,85 @@ export function Admin({ onNavigate }: AdminProps) {
           <span>{isRTL ? 'استيراد الإعدادات' : 'Import Settings'}</span>
           <input type="file" accept=".json" onChange={handleImport} className="hidden" />
         </label>
+        <div className="mt-3 p-3 bg-slate-800/30 rounded-lg border border-slate-700/50">
+          <h4 className="text-xs font-medium text-slate-300 mb-2">{isRTL ? 'نطاق إعادة التعيين' : 'Reset Scope'}</h4>
+          <div className="space-y-1">
+            <button
+              onClick={() => restoreComponent('navbar')}
+              className="w-full flex items-center justify-between px-2 py-1.5 bg-slate-800/50 hover:bg-slate-700/50 rounded text-xs text-slate-400"
+            >
+              <span>{isRTL ? 'إعادة تعيين القائمة' : 'Reset Navbar'}</span>
+              <CornerUpLeft className="w-3 h-3" />
+            </button>
+            <button
+              onClick={() => restoreComponent('footer')}
+              className="w-full flex items-center justify-between px-2 py-1.5 bg-slate-800/50 hover:bg-slate-700/50 rounded text-xs text-slate-400"
+            >
+              <span>{isRTL ? 'إعادة تعيين التذييل' : 'Reset Footer'}</span>
+              <CornerUpLeft className="w-3 h-3" />
+            </button>
+            <button
+              onClick={() => restoreComponent('hero')}
+              className="w-full flex items-center justify-between px-2 py-1.5 bg-slate-800/50 hover:bg-slate-700/50 rounded text-xs text-slate-400"
+            >
+              <span>{isRTL ? 'إعادة تعيين البطل' : 'Reset Hero'}</span>
+              <CornerUpLeft className="w-3 h-3" />
+            </button>
+            <button
+              onClick={() => restoreDashboardLayout()}
+              className="w-full flex items-center justify-between px-2 py-1.5 bg-slate-800/50 hover:bg-slate-700/50 rounded text-xs text-slate-400"
+            >
+              <span>{isRTL ? 'إعادة تعيين لوحة التحكم' : 'Reset Dashboard'}</span>
+              <CornerUpLeft className="w-3 h-3" />
+            </button>
+          </div>
+        </div>
+      </AccordionSection>
+
+      <AccordionSection title="System Info" titleAr="معلومات النظام" icon={Info}>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between p-2 bg-slate-800/50 rounded-lg">
+            <span className="text-xs text-slate-400">{isRTL ? 'آخر نشر' : 'Last Published'}</span>
+            <span className="text-xs text-slate-300">
+              {draftConfig.lastPublished 
+                ? new Date(draftConfig.lastPublished).toLocaleString()
+                : isRTL ? 'لم يتم النشر' : 'Never'}
+            </span>
+          </div>
+          <div className="flex items-center justify-between p-2 bg-slate-800/50 rounded-lg">
+            <span className="text-xs text-slate-400">{isRTL ? 'عدد النسخ' : 'Snapshots'}</span>
+            <span className="text-xs text-slate-300">{snapshots.length}</span>
+          </div>
+          <div className="flex items-center justify-between p-2 bg-slate-800/50 rounded-lg">
+            <span className="text-xs text-slate-400">{isRTL ? 'المحذوفات' : 'Trash Items'}</span>
+            <span className="text-xs text-slate-300">{trash.length}</span>
+          </div>
+          <div className="flex items-center justify-between p-2 bg-slate-800/50 rounded-lg">
+            <span className="text-xs text-slate-400">{isRTL ? 'أعضاء الفريق' : 'Team Members'}</span>
+            <span className="text-xs text-slate-300">{draftConfig.team.length}</span>
+          </div>
+          <div className="flex items-center justify-between p-2 bg-slate-800/50 rounded-lg">
+            <span className="text-xs text-slate-400">{isRTL ? 'الإصدار' : 'Version'}</span>
+            <span className="text-xs text-slate-300">Admin Studio 1.0</span>
+          </div>
+        </div>
       </AccordionSection>
 
       <AccordionSection title="Danger Zone" titleAr="منطقة الخطر" icon={AlertTriangle}>
+        <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg mb-3">
+          <p className="text-xs text-red-400">
+            {isRTL 
+              ? 'تحذير: هذه الإجراءات لا يمكن التراجع عنها. تأكد من أنك تريد المتابعة.'
+              : 'Warning: These actions cannot be undone. Make sure you want to proceed.'}
+          </p>
+        </div>
+        <button
+          onClick={() => setShowRestoreConfirm('published')}
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/30 rounded-lg text-sm text-amber-400 transition-colors mb-2"
+        >
+          <RefreshCw className="w-4 h-4" />
+          <span>{isRTL ? 'استعادة آخر نشر' : 'Restore Last Published'}</span>
+        </button>
         <button
           onClick={() => setShowRestoreConfirm('defaults')}
           className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 rounded-lg text-sm text-red-400 transition-colors"
@@ -1969,18 +2310,971 @@ export function Admin({ onNavigate }: AdminProps) {
     </div>
   );
 
+  // Content CMS Panel
+  const renderContent = () => (
+    <div className="space-y-4">
+      <AccordionSection title="Hero Content" titleAr="محتوى البطل" icon={Home} defaultOpen>
+        <InputField
+          label="Headline (Arabic)"
+          labelAr="العنوان الرئيسي (عربي)"
+          value={draftConfig.hero.headline.text.ar}
+          onChange={(v) => updateDraft('hero.headline.text.ar', v)}
+        />
+        <InputField
+          label="Headline (English)"
+          labelAr="العنوان الرئيسي (انجليزي)"
+          value={draftConfig.hero.headline.text.en}
+          onChange={(v) => updateDraft('hero.headline.text.en', v)}
+        />
+        <InputField
+          label="Subheadline (Arabic)"
+          labelAr="العنوان الفرعي (عربي)"
+          value={draftConfig.hero.subheadline.text.ar}
+          onChange={(v) => updateDraft('hero.subheadline.text.ar', v)}
+        />
+        <InputField
+          label="Subheadline (English)"
+          labelAr="العنوان الفرعي (انجليزي)"
+          value={draftConfig.hero.subheadline.text.en}
+          onChange={(v) => updateDraft('hero.subheadline.text.en', v)}
+        />
+      </AccordionSection>
+
+      <AccordionSection title="CTA Buttons" titleAr="أزرار الدعوة للعمل" icon={MousePointer}>
+        <InputField
+          label="Primary CTA (Arabic)"
+          labelAr="الزر الأساسي (عربي)"
+          value={draftConfig.hero.ctaButton.text.ar}
+          onChange={(v) => updateDraft('hero.ctaButton.text.ar', v)}
+        />
+        <InputField
+          label="Primary CTA (English)"
+          labelAr="الزر الأساسي (انجليزي)"
+          value={draftConfig.hero.ctaButton.text.en}
+          onChange={(v) => updateDraft('hero.ctaButton.text.en', v)}
+        />
+        {draftConfig.hero.secondaryButton && (
+          <>
+            <InputField
+              label="Secondary CTA (Arabic)"
+              labelAr="الزر الثانوي (عربي)"
+              value={draftConfig.hero.secondaryButton.text.ar}
+              onChange={(v) => updateDraft('hero.secondaryButton.text.ar', v)}
+            />
+            <InputField
+              label="Secondary CTA (English)"
+              labelAr="الزر الثانوي (انجليزي)"
+              value={draftConfig.hero.secondaryButton.text.en}
+              onChange={(v) => updateDraft('hero.secondaryButton.text.en', v)}
+            />
+          </>
+        )}
+      </AccordionSection>
+
+      <AccordionSection title="Audience Cards" titleAr="بطاقات الجمهور" icon={Users}>
+        <div className="space-y-3">
+          {draftConfig.hero.audienceCards.map((card, idx) => (
+            <div key={card.id} className="p-3 bg-slate-800/30 rounded-lg border border-slate-700/50 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-white">{isRTL ? card.title.ar : card.title.en}</span>
+                <ToggleRow
+                  label=""
+                  labelAr=""
+                  checked={card.visible ?? true}
+                  onChange={(v) => {
+                    const cards = [...draftConfig.hero.audienceCards];
+                    cards[idx].visible = v;
+                    updateDraft('hero.audienceCards', cards);
+                  }}
+                />
+              </div>
+              <InputField
+                label="Title (Arabic)"
+                labelAr="العنوان (عربي)"
+                value={card.title.ar}
+                onChange={(v) => {
+                  const cards = [...draftConfig.hero.audienceCards];
+                  cards[idx].title.ar = v;
+                  updateDraft('hero.audienceCards', cards);
+                }}
+              />
+              <InputField
+                label="Title (English)"
+                labelAr="العنوان (انجليزي)"
+                value={card.title.en}
+                onChange={(v) => {
+                  const cards = [...draftConfig.hero.audienceCards];
+                  cards[idx].title.en = v;
+                  updateDraft('hero.audienceCards', cards);
+                }}
+              />
+              <InputField
+                label="Description (Arabic)"
+                labelAr="الوصف (عربي)"
+                value={card.description.ar}
+                onChange={(v) => {
+                  const cards = [...draftConfig.hero.audienceCards];
+                  cards[idx].description.ar = v;
+                  updateDraft('hero.audienceCards', cards);
+                }}
+              />
+              <InputField
+                label="Description (English)"
+                labelAr="الوصف (انجليزي)"
+                value={card.description.en}
+                onChange={(v) => {
+                  const cards = [...draftConfig.hero.audienceCards];
+                  cards[idx].description.en = v;
+                  updateDraft('hero.audienceCards', cards);
+                }}
+              />
+            </div>
+          ))}
+        </div>
+      </AccordionSection>
+
+      <AccordionSection title="Footer Content" titleAr="محتوى التذييل" icon={FileText}>
+        <InputField
+          label="Copyright (Arabic)"
+          labelAr="حقوق النشر (عربي)"
+          value={draftConfig.footer.copyright.ar}
+          onChange={(v) => updateDraft('footer.copyright.ar', v)}
+        />
+        <InputField
+          label="Copyright (English)"
+          labelAr="حقوق النشر (انجليزي)"
+          value={draftConfig.footer.copyright.en}
+          onChange={(v) => updateDraft('footer.copyright.en', v)}
+        />
+        <InputField
+          label="Contact Email"
+          labelAr="البريد الإلكتروني"
+          value={draftConfig.footer.contactInfo.email}
+          onChange={(v) => updateDraft('footer.contactInfo.email', v)}
+          type="email"
+        />
+        <InputField
+          label="Contact Phone"
+          labelAr="رقم الهاتف"
+          value={draftConfig.footer.contactInfo.phone}
+          onChange={(v) => updateDraft('footer.contactInfo.phone', v)}
+        />
+        <InputField
+          label="Address (Arabic)"
+          labelAr="العنوان (عربي)"
+          value={draftConfig.footer.contactInfo.address.ar}
+          onChange={(v) => updateDraft('footer.contactInfo.address.ar', v)}
+        />
+        <InputField
+          label="Address (English)"
+          labelAr="العنوان (انجليزي)"
+          value={draftConfig.footer.contactInfo.address.en}
+          onChange={(v) => updateDraft('footer.contactInfo.address.en', v)}
+        />
+      </AccordionSection>
+    </div>
+  );
+
+  // Navbar & Footer Manager Panel
+  const renderNavbarFooter = () => (
+    <div className="space-y-4">
+      <AccordionSection title="Logo Settings" titleAr="إعدادات الشعار" icon={Sparkles} defaultOpen>
+        <InputField
+          label="Logo Text"
+          labelAr="نص الشعار"
+          value={draftConfig.navbar.logo.text}
+          onChange={(v) => updateDraft('navbar.logo.text', v)}
+        />
+        <InputField
+          label="Logo Image URL"
+          labelAr="رابط صورة الشعار"
+          value={draftConfig.navbar.logo.imageUrl || ''}
+          onChange={(v) => updateDraft('navbar.logo.imageUrl', v)}
+          type="url"
+        />
+        <ToggleRow
+          label="Show Logo"
+          labelAr="إظهار الشعار"
+          checked={draftConfig.navbar.logo.visible}
+          onChange={(v) => updateDraft('navbar.logo.visible', v)}
+        />
+      </AccordionSection>
+
+      <AccordionSection title="Navigation Items" titleAr="عناصر التنقل" icon={Navigation} defaultOpen>
+        <div className="space-y-2">
+          {draftConfig.navbar.items
+            .sort((a: NavItemConfig, b: NavItemConfig) => a.order - b.order)
+            .map((item: NavItemConfig, idx: number) => (
+              <DraggableItem
+                key={item.id}
+                visible={item.visible}
+                canMoveUp={idx > 0}
+                canMoveDown={idx < draftConfig.navbar.items.length - 1}
+                onMoveUp={() => {
+                  const items = [...draftConfig.navbar.items].sort((a, b) => a.order - b.order);
+                  if (idx > 0) {
+                    const temp = items[idx].order;
+                    items[idx].order = items[idx - 1].order;
+                    items[idx - 1].order = temp;
+                    updateDraft('navbar.items', items);
+                  }
+                }}
+                onMoveDown={() => {
+                  const items = [...draftConfig.navbar.items].sort((a, b) => a.order - b.order);
+                  if (idx < items.length - 1) {
+                    const temp = items[idx].order;
+                    items[idx].order = items[idx + 1].order;
+                    items[idx + 1].order = temp;
+                    updateDraft('navbar.items', items);
+                  }
+                }}
+                onToggleVisibility={() => {
+                  const items = [...draftConfig.navbar.items];
+                  const itemIdx = items.findIndex(i => i.id === item.id);
+                  items[itemIdx].visible = !items[itemIdx].visible;
+                  updateDraft('navbar.items', items);
+                }}
+                onDelete={() => {
+                  const items = draftConfig.navbar.items.filter((i: NavItemConfig) => i.id !== item.id);
+                  updateDraft('navbar.items', items);
+                }}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-slate-300">{isRTL ? item.label.ar : item.label.en}</span>
+                  <span className="text-xs text-slate-500">({item.page})</span>
+                </div>
+              </DraggableItem>
+            ))}
+        </div>
+        <button
+          onClick={() => {
+            const items = [...draftConfig.navbar.items];
+            items.push({
+              id: `nav_${Date.now()}`,
+              label: { ar: 'رابط جديد', en: 'New Link' },
+              page: 'new-page',
+              visible: true,
+              order: items.length,
+            });
+            updateDraft('navbar.items', items);
+          }}
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 rounded-lg text-sm text-blue-400 transition-colors"
+        >
+          <Plus className="w-4 h-4" />
+          <span>{isRTL ? 'إضافة رابط' : 'Add Nav Item'}</span>
+        </button>
+      </AccordionSection>
+
+      <AccordionSection title="Navbar CTA Button" titleAr="زر الدعوة للعمل" icon={MousePointer}>
+        {draftConfig.navbar.ctaButton && (
+          <>
+            <InputField
+              label="Button Text (Arabic)"
+              labelAr="نص الزر (عربي)"
+              value={draftConfig.navbar.ctaButton.text.ar}
+              onChange={(v) => updateDraft('navbar.ctaButton.text.ar', v)}
+            />
+            <InputField
+              label="Button Text (English)"
+              labelAr="نص الزر (انجليزي)"
+              value={draftConfig.navbar.ctaButton.text.en}
+              onChange={(v) => updateDraft('navbar.ctaButton.text.en', v)}
+            />
+            <SelectField
+              label="Button Variant"
+              labelAr="نمط الزر"
+              value={draftConfig.navbar.ctaButton.variant || 'primary'}
+              onChange={(v) => updateDraft('navbar.ctaButton.variant', v)}
+              options={[
+                { value: 'primary', label: 'Primary', labelAr: 'أساسي' },
+                { value: 'secondary', label: 'Secondary', labelAr: 'ثانوي' },
+                { value: 'outline', label: 'Outline', labelAr: 'محدد' },
+                { value: 'ghost', label: 'Ghost', labelAr: 'شفاف' },
+              ]}
+            />
+            <ToggleRow
+              label="Show Button"
+              labelAr="إظهار الزر"
+              checked={draftConfig.navbar.ctaButton.visible ?? true}
+              onChange={(v) => updateDraft('navbar.ctaButton.visible', v)}
+            />
+          </>
+        )}
+      </AccordionSection>
+
+      <AccordionSection title="Footer Columns" titleAr="أعمدة التذييل" icon={Columns}>
+        <div className="space-y-3">
+          {draftConfig.footer.columns
+            .sort((a: FooterColumnConfig, b: FooterColumnConfig) => a.order - b.order)
+            .map((column: FooterColumnConfig, idx: number) => (
+              <div key={column.id} className="p-3 bg-slate-800/30 rounded-lg border border-slate-700/50 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-white">{isRTL ? column.title.ar : column.title.en}</span>
+                  <ToggleRow
+                    label=""
+                    labelAr=""
+                    checked={column.visible}
+                    onChange={(v) => {
+                      const columns = [...draftConfig.footer.columns];
+                      columns[idx].visible = v;
+                      updateDraft('footer.columns', columns);
+                    }}
+                  />
+                </div>
+                <InputField
+                  label="Title (Arabic)"
+                  labelAr="العنوان (عربي)"
+                  value={column.title.ar}
+                  onChange={(v) => {
+                    const columns = [...draftConfig.footer.columns];
+                    columns[idx].title.ar = v;
+                    updateDraft('footer.columns', columns);
+                  }}
+                />
+                <InputField
+                  label="Title (English)"
+                  labelAr="العنوان (انجليزي)"
+                  value={column.title.en}
+                  onChange={(v) => {
+                    const columns = [...draftConfig.footer.columns];
+                    columns[idx].title.en = v;
+                    updateDraft('footer.columns', columns);
+                  }}
+                />
+                <div className="text-xs text-slate-500 mt-2">{column.links.length} {isRTL ? 'روابط' : 'links'}</div>
+              </div>
+            ))}
+        </div>
+      </AccordionSection>
+
+      <AccordionSection title="Social Links" titleAr="روابط التواصل" icon={Globe}>
+        <div className="space-y-2">
+          {draftConfig.footer.socialLinks.map((social, idx) => (
+            <div key={social.id} className="flex items-center gap-2 p-2 bg-slate-800/50 rounded-lg">
+              <span className="text-xs text-slate-300 capitalize flex-1">{social.platform}</span>
+              <ToggleRow
+                label=""
+                labelAr=""
+                checked={social.visible}
+                onChange={(v) => {
+                  const links = [...draftConfig.footer.socialLinks];
+                  links[idx].visible = v;
+                  updateDraft('footer.socialLinks', links);
+                }}
+              />
+            </div>
+          ))}
+        </div>
+      </AccordionSection>
+    </div>
+  );
+
+  // Media Manager Panel
+  const renderMedia = () => (
+    <div className="space-y-4">
+      <AccordionSection title="Media Library" titleAr="مكتبة الوسائط" icon={Image} defaultOpen>
+        {draftConfig.media.length === 0 ? (
+          <p className="text-sm text-slate-500 text-center py-4">{isRTL ? 'لا توجد وسائط' : 'No media assets yet'}</p>
+        ) : (
+          <div className="grid grid-cols-2 gap-2">
+            {draftConfig.media.map((asset: MediaAsset) => (
+              <div key={asset.id} className="relative group rounded-lg overflow-hidden border border-slate-700">
+                <div className="aspect-square bg-slate-800 flex items-center justify-center">
+                  {asset.type === 'image' ? (
+                    <ImagePlus className="w-8 h-8 text-slate-600" />
+                  ) : (
+                    <FileImage className="w-8 h-8 text-slate-600" />
+                  )}
+                </div>
+                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                  <button className="p-1.5 bg-slate-700 rounded text-white hover:bg-slate-600">
+                    <Eye className="w-4 h-4" />
+                  </button>
+                  <button 
+                    onClick={() => {
+                      const media = draftConfig.media.filter((m: MediaAsset) => m.id !== asset.id);
+                      updateDraft('media', media);
+                    }}
+                    className="p-1.5 bg-red-500/50 rounded text-white hover:bg-red-500"
+                  >
+                    <Trash className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="p-2 bg-slate-800/80">
+                  <p className="text-xs text-slate-300 truncate">{asset.name}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        <button
+          onClick={() => {
+            const newAsset: MediaAsset = {
+              id: `media_${Date.now()}`,
+              url: '',
+              name: 'New Asset',
+              type: 'image',
+              uploadedAt: Date.now(),
+              usedIn: [],
+            };
+            updateDraft('media', [...draftConfig.media, newAsset]);
+          }}
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 rounded-lg text-sm text-blue-400 transition-colors"
+        >
+          <Upload className="w-4 h-4" />
+          <span>{isRTL ? 'رفع ملف' : 'Upload Asset'}</span>
+        </button>
+      </AccordionSection>
+
+      <AccordionSection title="Background Images" titleAr="صور الخلفية" icon={FileImage}>
+        <InputField
+          label="Hero Background"
+          labelAr="خلفية البطل"
+          value={draftConfig.hero.backgroundImage || ''}
+          onChange={(v) => updateDraft('hero.backgroundImage', v)}
+          type="url"
+        />
+        <InputField
+          label="Background Pattern"
+          labelAr="نمط الخلفية"
+          value={draftConfig.hero.backgroundPattern || ''}
+          onChange={(v) => updateDraft('hero.backgroundPattern', v)}
+        />
+      </AccordionSection>
+    </div>
+  );
+
+  // SEO Manager Panel
+  const renderSEO = () => (
+    <div className="space-y-4">
+      <SelectField
+        label="Select Page"
+        labelAr="اختر الصفحة"
+        value={activePage}
+        onChange={setActivePage}
+        options={pageOptions}
+      />
+
+      <AccordionSection title="Page SEO" titleAr="تحسين محركات البحث" icon={Globe} defaultOpen>
+        <InputField
+          label="Title (Arabic)"
+          labelAr="العنوان (عربي)"
+          value={draftConfig.seo[activePage]?.title?.ar || ''}
+          onChange={(v) => updateDraft(`seo.${activePage}.title.ar`, v)}
+        />
+        <InputField
+          label="Title (English)"
+          labelAr="العنوان (انجليزي)"
+          value={draftConfig.seo[activePage]?.title?.en || ''}
+          onChange={(v) => updateDraft(`seo.${activePage}.title.en`, v)}
+        />
+        <TextareaField
+          label="Description (Arabic)"
+          labelAr="الوصف (عربي)"
+          value={draftConfig.seo[activePage]?.description?.ar || ''}
+          onChange={(v) => updateDraft(`seo.${activePage}.description.ar`, v)}
+        />
+        <TextareaField
+          label="Description (English)"
+          labelAr="الوصف (انجليزي)"
+          value={draftConfig.seo[activePage]?.description?.en || ''}
+          onChange={(v) => updateDraft(`seo.${activePage}.description.en`, v)}
+        />
+      </AccordionSection>
+
+      <AccordionSection title="Open Graph" titleAr="Open Graph" icon={ExternalLink}>
+        <InputField
+          label="OG Title (Arabic)"
+          labelAr="عنوان OG (عربي)"
+          value={draftConfig.seo[activePage]?.ogTitle?.ar || ''}
+          onChange={(v) => updateDraft(`seo.${activePage}.ogTitle.ar`, v)}
+        />
+        <InputField
+          label="OG Title (English)"
+          labelAr="عنوان OG (انجليزي)"
+          value={draftConfig.seo[activePage]?.ogTitle?.en || ''}
+          onChange={(v) => updateDraft(`seo.${activePage}.ogTitle.en`, v)}
+        />
+        <TextareaField
+          label="OG Description (Arabic)"
+          labelAr="وصف OG (عربي)"
+          value={draftConfig.seo[activePage]?.ogDescription?.ar || ''}
+          onChange={(v) => updateDraft(`seo.${activePage}.ogDescription.ar`, v)}
+        />
+        <TextareaField
+          label="OG Description (English)"
+          labelAr="وصف OG (انجليزي)"
+          value={draftConfig.seo[activePage]?.ogDescription?.en || ''}
+          onChange={(v) => updateDraft(`seo.${activePage}.ogDescription.en`, v)}
+        />
+        <InputField
+          label="OG Image URL"
+          labelAr="رابط صورة OG"
+          value={draftConfig.seo[activePage]?.ogImage || ''}
+          onChange={(v) => updateDraft(`seo.${activePage}.ogImage`, v)}
+          type="url"
+        />
+      </AccordionSection>
+
+      <AccordionSection title="Advanced SEO" titleAr="SEO متقدم" icon={Settings}>
+        <InputField
+          label="Keywords"
+          labelAr="الكلمات المفتاحية"
+          value={draftConfig.seo[activePage]?.keywords || ''}
+          onChange={(v) => updateDraft(`seo.${activePage}.keywords`, v)}
+        />
+        <InputField
+          label="Canonical URL"
+          labelAr="الرابط الأساسي"
+          value={draftConfig.seo[activePage]?.canonical || ''}
+          onChange={(v) => updateDraft(`seo.${activePage}.canonical`, v)}
+          type="url"
+        />
+        <SelectField
+          label="Robots"
+          labelAr="الروبوتات"
+          value={draftConfig.seo[activePage]?.robots || 'index'}
+          onChange={(v) => updateDraft(`seo.${activePage}.robots`, v)}
+          options={[
+            { value: 'index', label: 'Index', labelAr: 'فهرسة' },
+            { value: 'noindex', label: 'No Index', labelAr: 'عدم الفهرسة' },
+          ]}
+        />
+      </AccordionSection>
+    </div>
+  );
+
+  // Policies Manager Panel
+  const renderPolicies = () => (
+    <div className="space-y-4">
+      <AccordionSection title="Legal Pages" titleAr="الصفحات القانونية" icon={Scale} defaultOpen>
+        <div className="space-y-3">
+          {draftConfig.policies.map((policy: PolicyPage, idx: number) => (
+            <div key={policy.id} className="p-3 bg-slate-800/30 rounded-lg border border-slate-700/50 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-white">{isRTL ? policy.title.ar : policy.title.en}</span>
+                <ToggleRow
+                  label=""
+                  labelAr=""
+                  checked={policy.visible}
+                  onChange={(v) => {
+                    const policies = [...draftConfig.policies];
+                    policies[idx].visible = v;
+                    updateDraft('policies', policies);
+                  }}
+                />
+              </div>
+              <InputField
+                label="Title (Arabic)"
+                labelAr="العنوان (عربي)"
+                value={policy.title.ar}
+                onChange={(v) => {
+                  const policies = [...draftConfig.policies];
+                  policies[idx].title.ar = v;
+                  updateDraft('policies', policies);
+                }}
+              />
+              <InputField
+                label="Title (English)"
+                labelAr="العنوان (انجليزي)"
+                value={policy.title.en}
+                onChange={(v) => {
+                  const policies = [...draftConfig.policies];
+                  policies[idx].title.en = v;
+                  updateDraft('policies', policies);
+                }}
+              />
+              <TextareaField
+                label="Content (Arabic)"
+                labelAr="المحتوى (عربي)"
+                value={policy.content.ar}
+                onChange={(v) => {
+                  const policies = [...draftConfig.policies];
+                  policies[idx].content.ar = v;
+                  updateDraft('policies', policies);
+                }}
+                rows={4}
+              />
+              <TextareaField
+                label="Content (English)"
+                labelAr="المحتوى (انجليزي)"
+                value={policy.content.en}
+                onChange={(v) => {
+                  const policies = [...draftConfig.policies];
+                  policies[idx].content.en = v;
+                  updateDraft('policies', policies);
+                }}
+                rows={4}
+              />
+              <div className="text-xs text-slate-500">
+                {isRTL ? 'آخر تحديث: ' : 'Last updated: '}
+                {new Date(policy.lastUpdated).toLocaleDateString()}
+              </div>
+            </div>
+          ))}
+        </div>
+        <button
+          onClick={() => {
+            const policies = [...draftConfig.policies];
+            policies.push({
+              id: `policy_${Date.now()}`,
+              slug: `policy-${Date.now()}`,
+              title: { ar: 'سياسة جديدة', en: 'New Policy' },
+              content: { ar: '', en: '' },
+              visible: true,
+              lastUpdated: Date.now(),
+            });
+            updateDraft('policies', policies);
+          }}
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 rounded-lg text-sm text-blue-400 transition-colors"
+        >
+          <Plus className="w-4 h-4" />
+          <span>{isRTL ? 'إضافة سياسة' : 'Add Policy'}</span>
+        </button>
+      </AccordionSection>
+    </div>
+  );
+
+  // Presets Library Panel
+  const renderPresets = () => (
+    <div className="space-y-4">
+      <AccordionSection title="Block Presets" titleAr="قوالب الكتل" icon={Layers} defaultOpen>
+        {draftConfig.presets.length === 0 ? (
+          <p className="text-sm text-slate-500 text-center py-4">{isRTL ? 'لا توجد قوالب' : 'No presets saved yet'}</p>
+        ) : (
+          <div className="space-y-2">
+            {draftConfig.presets.map((preset: BlockPreset) => (
+              <div key={preset.id} className="p-3 bg-slate-800/50 rounded-lg border border-slate-700/50">
+                <div className="flex items-center justify-between mb-2">
+                  <div>
+                    <span className="text-sm font-medium text-white">{isRTL ? preset.name.ar : preset.name.en}</span>
+                    <span className="text-xs text-slate-500 ml-2 capitalize">{preset.type}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => {
+                        const presets = [...draftConfig.presets];
+                        presets.push({
+                          ...preset,
+                          id: `preset_${Date.now()}`,
+                          name: { ar: `${preset.name.ar} (نسخة)`, en: `${preset.name.en} (copy)` },
+                          createdAt: Date.now(),
+                        });
+                        updateDraft('presets', presets);
+                      }}
+                      className="p-1 text-slate-500 hover:text-white"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        const presets = draftConfig.presets.filter((p: BlockPreset) => p.id !== preset.id);
+                        updateDraft('presets', presets);
+                      }}
+                      className="p-1 text-slate-500 hover:text-red-400"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+                <div className="text-xs text-slate-500">
+                  {isRTL ? 'تم الإنشاء: ' : 'Created: '}
+                  {new Date(preset.createdAt).toLocaleDateString()}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </AccordionSection>
+
+      <AccordionSection title="Create Preset" titleAr="إنشاء قالب" icon={Plus}>
+        <SelectField
+          label="Preset Type"
+          labelAr="نوع القالب"
+          value="hero"
+          onChange={() => {}}
+          options={[
+            { value: 'hero', label: 'Hero Block', labelAr: 'كتلة البطل' },
+            { value: 'cta', label: 'CTA Block', labelAr: 'كتلة الدعوة' },
+            { value: 'stats', label: 'Stats Block', labelAr: 'كتلة الإحصائيات' },
+            { value: 'pricing', label: 'Pricing Block', labelAr: 'كتلة الأسعار' },
+            { value: 'widget', label: 'Dashboard Widget', labelAr: 'عنصر لوحة التحكم' },
+            { value: 'section', label: 'Custom Section', labelAr: 'قسم مخصص' },
+          ]}
+        />
+        <button
+          onClick={() => {
+            const presets = [...draftConfig.presets];
+            presets.push({
+              id: `preset_${Date.now()}`,
+              name: { ar: 'قالب جديد', en: 'New Preset' },
+              type: 'section',
+              config: {},
+              createdAt: Date.now(),
+            });
+            updateDraft('presets', presets);
+          }}
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-blue-500 hover:bg-blue-600 rounded-lg text-sm text-white transition-colors"
+        >
+          <Plus className="w-4 h-4" />
+          <span>{isRTL ? 'إنشاء قالب' : 'Create Preset'}</span>
+        </button>
+      </AccordionSection>
+    </div>
+  );
+
+  // Redirects Manager Panel
+  const renderRedirects = () => (
+    <div className="space-y-4">
+      <AccordionSection title="Redirect Rules" titleAr="قواعد التوجيه" icon={ArrowRight} defaultOpen>
+        {draftConfig.redirects.length === 0 ? (
+          <p className="text-sm text-slate-500 text-center py-4">{isRTL ? 'لا توجد توجيهات' : 'No redirects configured'}</p>
+        ) : (
+          <div className="space-y-2">
+            {draftConfig.redirects.map((redirect: RedirectRule, idx: number) => (
+              <div key={redirect.id} className="p-3 bg-slate-800/50 rounded-lg border border-slate-700/50">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-slate-400">{redirect.from}</span>
+                    <ArrowRight className="w-3 h-3 text-slate-600" />
+                    <span className="text-xs text-slate-300">{redirect.to}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className={`px-1.5 py-0.5 text-xs rounded ${redirect.type === 'permanent' ? 'bg-green-500/20 text-green-400' : 'bg-amber-500/20 text-amber-400'}`}>
+                      {redirect.type === 'permanent' ? '301' : '302'}
+                    </span>
+                    <ToggleRow
+                      label=""
+                      labelAr=""
+                      checked={redirect.active}
+                      onChange={(v) => {
+                        const redirects = [...draftConfig.redirects];
+                        redirects[idx].active = v;
+                        updateDraft('redirects', redirects);
+                      }}
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      const redirects = draftConfig.redirects.filter((r: RedirectRule) => r.id !== redirect.id);
+                      updateDraft('redirects', redirects);
+                    }}
+                    className="text-xs text-red-400 hover:text-red-300"
+                  >
+                    {isRTL ? 'حذف' : 'Delete'}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </AccordionSection>
+
+      <AccordionSection title="Add Redirect" titleAr="إضافة توجيه" icon={Plus}>
+        <InputField
+          label="From Path"
+          labelAr="من المسار"
+          value=""
+          onChange={() => {}}
+          placeholder="/old-page"
+        />
+        <InputField
+          label="To Path"
+          labelAr="إلى المسار"
+          value=""
+          onChange={() => {}}
+          placeholder="/new-page"
+        />
+        <SelectField
+          label="Type"
+          labelAr="النوع"
+          value="permanent"
+          onChange={() => {}}
+          options={[
+            { value: 'permanent', label: 'Permanent (301)', labelAr: 'دائم (301)' },
+            { value: 'temporary', label: 'Temporary (302)', labelAr: 'مؤقت (302)' },
+          ]}
+        />
+        <button
+          onClick={() => {
+            const redirects = [...draftConfig.redirects];
+            redirects.push({
+              id: `redirect_${Date.now()}`,
+              from: '/old-page',
+              to: '/new-page',
+              type: 'permanent',
+              active: true,
+            });
+            updateDraft('redirects', redirects);
+          }}
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-blue-500 hover:bg-blue-600 rounded-lg text-sm text-white transition-colors"
+        >
+          <Plus className="w-4 h-4" />
+          <span>{isRTL ? 'إضافة توجيه' : 'Add Redirect'}</span>
+        </button>
+      </AccordionSection>
+    </div>
+  );
+
+  // Forms Manager Panel
+  const renderForms = () => (
+    <div className="space-y-4">
+      <AccordionSection title="Contact Form" titleAr="نموذج التواصل" icon={Mail} defaultOpen>
+        <div className="space-y-2">
+          {draftConfig.forms.contact.fields.map((field: FormFieldConfig, idx: number) => (
+            <DraggableItem
+              key={field.id}
+              visible={field.visible}
+              canMoveUp={idx > 0}
+              canMoveDown={idx < draftConfig.forms.contact.fields.length - 1}
+              onMoveUp={() => {
+                const fields = [...draftConfig.forms.contact.fields].sort((a, b) => a.order - b.order);
+                if (idx > 0) {
+                  const temp = fields[idx].order;
+                  fields[idx].order = fields[idx - 1].order;
+                  fields[idx - 1].order = temp;
+                  updateDraft('forms.contact.fields', fields);
+                }
+              }}
+              onMoveDown={() => {
+                const fields = [...draftConfig.forms.contact.fields].sort((a, b) => a.order - b.order);
+                if (idx < fields.length - 1) {
+                  const temp = fields[idx].order;
+                  fields[idx].order = fields[idx + 1].order;
+                  fields[idx + 1].order = temp;
+                  updateDraft('forms.contact.fields', fields);
+                }
+              }}
+              onToggleVisibility={() => {
+                const fields = [...draftConfig.forms.contact.fields];
+                fields[idx].visible = !fields[idx].visible;
+                updateDraft('forms.contact.fields', fields);
+              }}
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-300">{isRTL ? field.label.ar : field.label.en}</span>
+                <span className="text-xs text-slate-500">({field.type})</span>
+                {field.required && <span className="text-xs text-red-400">*</span>}
+              </div>
+            </DraggableItem>
+          ))}
+        </div>
+        <InputField
+          label="Submit Button (Arabic)"
+          labelAr="زر الإرسال (عربي)"
+          value={draftConfig.forms.contact.submitButton.ar}
+          onChange={(v) => updateDraft('forms.contact.submitButton.ar', v)}
+        />
+        <InputField
+          label="Submit Button (English)"
+          labelAr="زر الإرسال (انجليزي)"
+          value={draftConfig.forms.contact.submitButton.en}
+          onChange={(v) => updateDraft('forms.contact.submitButton.en', v)}
+        />
+        <InputField
+          label="Success Message (Arabic)"
+          labelAr="رسالة النجاح (عربي)"
+          value={draftConfig.forms.contact.successMessage.ar}
+          onChange={(v) => updateDraft('forms.contact.successMessage.ar', v)}
+        />
+        <InputField
+          label="Success Message (English)"
+          labelAr="رسالة النجاح (انجليزي)"
+          value={draftConfig.forms.contact.successMessage.en}
+          onChange={(v) => updateDraft('forms.contact.successMessage.en', v)}
+        />
+      </AccordionSection>
+
+      <AccordionSection title="Login Form" titleAr="نموذج الدخول" icon={Lock}>
+        <InputField
+          label="Email Label (Arabic)"
+          labelAr="عنوان البريد (عربي)"
+          value={draftConfig.forms.login.emailLabel.ar}
+          onChange={(v) => updateDraft('forms.login.emailLabel.ar', v)}
+        />
+        <InputField
+          label="Email Label (English)"
+          labelAr="عنوان البريد (انجليزي)"
+          value={draftConfig.forms.login.emailLabel.en}
+          onChange={(v) => updateDraft('forms.login.emailLabel.en', v)}
+        />
+        <InputField
+          label="Password Label (Arabic)"
+          labelAr="عنوان كلمة المرور (عربي)"
+          value={draftConfig.forms.login.passwordLabel.ar}
+          onChange={(v) => updateDraft('forms.login.passwordLabel.ar', v)}
+        />
+        <InputField
+          label="Password Label (English)"
+          labelAr="عنوان كلمة المرور (انجليزي)"
+          value={draftConfig.forms.login.passwordLabel.en}
+          onChange={(v) => updateDraft('forms.login.passwordLabel.en', v)}
+        />
+        <InputField
+          label="Submit Button (Arabic)"
+          labelAr="زر الإرسال (عربي)"
+          value={draftConfig.forms.login.submitLabel.ar}
+          onChange={(v) => updateDraft('forms.login.submitLabel.ar', v)}
+        />
+        <InputField
+          label="Submit Button (English)"
+          labelAr="زر الإرسال (انجليزي)"
+          value={draftConfig.forms.login.submitLabel.en}
+          onChange={(v) => updateDraft('forms.login.submitLabel.en', v)}
+        />
+      </AccordionSection>
+
+      <AccordionSection title="Register Form" titleAr="نموذج التسجيل" icon={User}>
+        <InputField
+          label="Name Label (Arabic)"
+          labelAr="عنوان الاسم (عربي)"
+          value={draftConfig.forms.register.nameLabel.ar}
+          onChange={(v) => updateDraft('forms.register.nameLabel.ar', v)}
+        />
+        <InputField
+          label="Name Label (English)"
+          labelAr="عنوان الاسم (انجليزي)"
+          value={draftConfig.forms.register.nameLabel.en}
+          onChange={(v) => updateDraft('forms.register.nameLabel.en', v)}
+        />
+        <InputField
+          label="Submit Button (Arabic)"
+          labelAr="زر الإرسال (عربي)"
+          value={draftConfig.forms.register.submitLabel.ar}
+          onChange={(v) => updateDraft('forms.register.submitLabel.ar', v)}
+        />
+        <InputField
+          label="Submit Button (English)"
+          labelAr="زر الإرسال (انجليزي)"
+          value={draftConfig.forms.register.submitLabel.en}
+          onChange={(v) => updateDraft('forms.register.submitLabel.en', v)}
+        />
+      </AccordionSection>
+    </div>
+  );
+
   // Render tab content based on active tab
   const renderTabContent = () => {
     switch (activeTab) {
       case 'overview': return renderOverview();
       case 'pages': return renderPages();
       case 'brand': return renderBrand();
+      case 'content': return renderContent();
+      case 'navbar-footer': return renderNavbarFooter();
+      case 'media': return renderMedia();
       case 'dashboard': return renderDashboard();
       case 'reports': return renderReports();
       case 'ai-chat': return renderAIChat();
       case 'team': return renderTeam();
       case 'visibility': return renderVisibility();
       case 'pricing': return renderPricing();
+      case 'seo': return renderSEO();
+      case 'policies': return renderPolicies();
+      case 'forms': return renderForms();
+      case 'presets': return renderPresets();
+      case 'redirects': return renderRedirects();
       case 'snapshots': return renderSnapshots();
       case 'trash': return renderTrash();
       case 'submissions': return renderSubmissions();
@@ -2186,38 +3480,250 @@ export function Admin({ onNavigate }: AdminProps) {
           </div>
 
           {/* Preview Area */}
-          <div className="flex-1 p-6 overflow-auto">
+          <div className="flex-1 p-6 overflow-auto bg-slate-950/50">
+            {/* Preview Controls */}
+            <div className="mb-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-500">{isRTL ? 'معاينة الصفحة:' : 'Preview Page:'}</span>
+                <select
+                  value={previewPage}
+                  onChange={(e) => setPreviewPage(e.target.value)}
+                  className="px-3 py-1 bg-slate-800 border border-slate-700 rounded-lg text-xs text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                >
+                  <option value="home">{isRTL ? 'الرئيسية' : 'Homepage'}</option>
+                  <option value="companies">{isRTL ? 'الشركات' : 'Companies'}</option>
+                  <option value="individuals">{isRTL ? 'الأفراد' : 'Individuals'}</option>
+                  <option value="bloggers">{isRTL ? 'البلوجر' : 'Bloggers'}</option>
+                  <option value="sellers">{isRTL ? 'تجار أونلاين' : 'Online Sellers'}</option>
+                  <option value="pricing">{isRTL ? 'الأسعار' : 'Pricing'}</option>
+                  <option value="dashboard">{isRTL ? 'لوحة التحكم' : 'Dashboard'}</option>
+                </select>
+              </div>
+              <div className="flex items-center gap-2">
+                <StatusBadge status={isPreviewMode ? 'published' : 'draft'} />
+                <span className="text-xs text-slate-500">{previewDevice}</span>
+              </div>
+            </div>
+
             <div 
-              className={`mx-auto bg-slate-900 rounded-xl border border-slate-800 overflow-hidden transition-all duration-300 ${
+              className={`mx-auto bg-white rounded-xl border border-slate-700 overflow-hidden shadow-2xl transition-all duration-300 ${
                 previewDevice === 'desktop' ? 'w-full' : 
                 previewDevice === 'tablet' ? 'max-w-2xl' : 
                 'max-w-sm'
               }`}
             >
-              <div className="p-4 bg-slate-800/50 border-b border-slate-700 flex items-center gap-2">
+              {/* Browser Chrome */}
+              <div className="p-3 bg-slate-200 border-b border-slate-300 flex items-center gap-2">
                 <div className="flex gap-1.5">
-                  <div className="w-3 h-3 rounded-full bg-red-500" />
-                  <div className="w-3 h-3 rounded-full bg-yellow-500" />
-                  <div className="w-3 h-3 rounded-full bg-green-500" />
+                  <div className="w-3 h-3 rounded-full bg-red-400" />
+                  <div className="w-3 h-3 rounded-full bg-yellow-400" />
+                  <div className="w-3 h-3 rounded-full bg-green-400" />
                 </div>
                 <div className="flex-1 mx-4">
-                  <div className="px-3 py-1 bg-slate-700 rounded text-xs text-slate-400 text-center">
-                    {isPreviewMode ? 'Published Preview' : 'Draft Preview'}
+                  <div className="px-4 py-1.5 bg-white rounded-lg text-xs text-slate-500 text-center border border-slate-200 flex items-center justify-center gap-2">
+                    <Lock className="w-3 h-3 text-green-500" />
+                    <span>horus-ai.com/{previewPage === 'home' ? '' : previewPage}</span>
                   </div>
                 </div>
+                <button 
+                  onClick={() => setPreviewMode(!isPreviewMode)}
+                  className="p-1.5 hover:bg-slate-300 rounded"
+                >
+                  <RefreshCw className="w-4 h-4 text-slate-500" />
+                </button>
               </div>
-              <div className="aspect-video bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center">
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <Zap className="w-8 h-8 text-white" />
+
+              {/* Preview Content */}
+              <div className="min-h-[500px] bg-white overflow-auto" dir={isRTL ? 'rtl' : 'ltr'}>
+                {/* Navbar Preview */}
+                <div className="bg-white border-b border-slate-100 px-4 py-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-800 rounded-lg flex items-center justify-center">
+                      <Zap className="w-5 h-5 text-white" />
+                    </div>
+                    <span className="font-bold text-slate-900 text-sm">{draftConfig.navbar.logo.text}</span>
                   </div>
-                  <h3 className="text-lg font-bold text-white mb-1">{draftConfig.brand.name}</h3>
-                  <p className="text-sm text-slate-400">
-                    {isRTL ? 'معاينة التغييرات تظهر هنا' : 'Changes preview appears here'}
-                  </p>
-                  <div className="mt-4 flex items-center justify-center gap-2">
-                    <StatusBadge status={isPreviewMode ? 'published' : 'draft'} />
-                    <span className="text-xs text-slate-500">{previewDevice}</span>
+                  <div className="flex items-center gap-4">
+                    {draftConfig.navbar.items.filter((i: NavItemConfig) => i.visible).slice(0, 4).map((item: NavItemConfig) => (
+                      <span key={item.id} className={`text-xs ${previewPage === item.page ? 'text-blue-600 font-medium' : 'text-slate-600'}`}>
+                        {isRTL ? item.label.ar : item.label.en}
+                      </span>
+                    ))}
+                  </div>
+                  {draftConfig.navbar.ctaButton?.visible && (
+                    <button className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg">
+                      {isRTL ? draftConfig.navbar.ctaButton.text.ar : draftConfig.navbar.ctaButton.text.en}
+                    </button>
+                  )}
+                </div>
+
+                {/* Page Content Preview */}
+                {previewPage === 'home' && (
+                  <div className="p-6">
+                    {/* Hero Section */}
+                    <div className="text-center py-12 px-4 bg-gradient-to-br from-slate-900 to-slate-800 rounded-xl mb-6">
+                      <h1 className="text-2xl font-bold text-white mb-3">
+                        {isRTL ? draftConfig.hero.headline.text.ar : draftConfig.hero.headline.text.en}
+                      </h1>
+                      <p className="text-sm text-slate-300 mb-6 max-w-md mx-auto">
+                        {isRTL ? draftConfig.hero.subheadline.text.ar : draftConfig.hero.subheadline.text.en}
+                      </p>
+                      <div className="flex items-center justify-center gap-3">
+                        <button className="px-4 py-2 bg-blue-600 text-white text-xs rounded-lg">
+                          {isRTL ? draftConfig.hero.ctaButton.text.ar : draftConfig.hero.ctaButton.text.en}
+                        </button>
+                        {draftConfig.hero.secondaryButton?.visible && (
+                          <button className="px-4 py-2 border border-slate-500 text-white text-xs rounded-lg">
+                            {isRTL ? draftConfig.hero.secondaryButton.text.ar : draftConfig.hero.secondaryButton.text.en}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Audience Cards Preview */}
+                    <div className="grid grid-cols-2 gap-3">
+                      {draftConfig.hero.audienceCards.filter(c => c.visible).map((card) => (
+                        <div key={card.id} className="p-4 bg-slate-50 rounded-lg border border-slate-200">
+                          <h3 className="text-sm font-semibold text-slate-900 mb-1">
+                            {isRTL ? card.title.ar : card.title.en}
+                          </h3>
+                          <p className="text-xs text-slate-500">
+                            {isRTL ? card.description.ar : card.description.en}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {previewPage === 'pricing' && (
+                  <div className="p-6">
+                    <h2 className="text-xl font-bold text-slate-900 text-center mb-6">
+                      {isRTL ? 'الخطط والأسعار' : 'Plans & Pricing'}
+                    </h2>
+                    <div className="grid grid-cols-2 gap-4">
+                      {draftConfig.pricing.plans.filter((p: PricingPlan) => p.visible).map((plan: PricingPlan) => (
+                        <div key={plan.id} className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm">
+                          <div className="flex items-center justify-between mb-3">
+                            <h3 className="text-sm font-bold text-slate-900">
+                              {isRTL ? plan.name.ar : plan.name.en}
+                            </h3>
+                            {plan.badge && (
+                              <span className="px-2 py-0.5 bg-blue-100 text-blue-600 text-xs rounded-full">
+                                {isRTL ? plan.badge.ar : plan.badge.en}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-slate-500 mb-3">
+                            {isRTL ? plan.description.ar : plan.description.en}
+                          </p>
+                          <div className="text-2xl font-bold text-slate-900 mb-4">
+                            {plan.price.monthly} <span className="text-xs text-slate-500">{plan.currency}/mo</span>
+                          </div>
+                          <button className="w-full py-2 bg-blue-600 text-white text-xs rounded-lg">
+                            {isRTL ? 'اشترك الآن' : 'Subscribe'}
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {previewPage === 'dashboard' && (
+                  <div className="p-6 bg-slate-50">
+                    <h2 className="text-lg font-bold text-slate-900 mb-4">
+                      {isRTL ? 'لوحة التحكم' : 'Dashboard'}
+                    </h2>
+                    <div className="grid grid-cols-4 gap-3 mb-4">
+                      {draftConfig.dashboard.widgets.filter(w => w.type === 'kpi' && w.visible).slice(0, 4).map((widget) => (
+                        <div key={widget.id} className="p-3 bg-white rounded-lg border border-slate-200">
+                          <div className="text-xs text-slate-500 mb-1">
+                            {isRTL ? widget.title.ar : widget.title.en}
+                          </div>
+                          <div className="text-xl font-bold text-slate-900">--</div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      {draftConfig.dashboard.widgets.filter(w => w.type === 'chart' && w.visible).slice(0, 2).map((widget) => (
+                        <div key={widget.id} className="p-4 bg-white rounded-lg border border-slate-200">
+                          <div className="text-sm font-medium text-slate-900 mb-3">
+                            {isRTL ? widget.title.ar : widget.title.en}
+                          </div>
+                          <div className="h-24 bg-slate-100 rounded flex items-center justify-center">
+                            <BarChart3 className="w-8 h-8 text-slate-300" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {(previewPage === 'companies' || previewPage === 'individuals' || previewPage === 'bloggers' || previewPage === 'sellers') && (
+                  <div className="p-6">
+                    <div className="text-center py-8 bg-gradient-to-br from-blue-600 to-blue-800 rounded-xl mb-6">
+                      <h1 className="text-xl font-bold text-white mb-2">
+                        {isRTL 
+                          ? draftConfig.pages[previewPage]?.title?.ar || 'صفحة الجمهور'
+                          : draftConfig.pages[previewPage]?.title?.en || 'Audience Page'}
+                      </h1>
+                      <p className="text-sm text-blue-100 max-w-md mx-auto">
+                        {isRTL ? 'محتوى مخصص لاحتياجاتك' : 'Content tailored to your needs'}
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-3 gap-3">
+                      {[1, 2, 3].map((i) => (
+                        <div key={i} className="p-4 bg-slate-50 rounded-lg border border-slate-200">
+                          <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mb-3">
+                            <Check className="w-5 h-5 text-blue-600" />
+                          </div>
+                          <h3 className="text-sm font-medium text-slate-900 mb-1">
+                            {isRTL ? `ميزة ${i}` : `Feature ${i}`}
+                          </h3>
+                          <p className="text-xs text-slate-500">
+                            {isRTL ? 'وصف الميزة يظهر هنا' : 'Feature description appears here'}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Footer Preview */}
+                <div className="bg-slate-900 px-6 py-8 mt-6">
+                  <div className="flex items-start justify-between mb-6">
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-6 h-6 bg-gradient-to-br from-blue-600 to-blue-800 rounded flex items-center justify-center">
+                          <Zap className="w-4 h-4 text-white" />
+                        </div>
+                        <span className="font-bold text-white text-sm">{draftConfig.navbar.logo.text}</span>
+                      </div>
+                      <p className="text-xs text-slate-400 max-w-xs">
+                        {isRTL ? 'منصة الذكاء الاصطناعي للتحليلات' : 'AI-powered analytics platform'}
+                      </p>
+                    </div>
+                    <div className="flex gap-8">
+                      {draftConfig.footer.columns.filter((c: FooterColumnConfig) => c.visible).slice(0, 2).map((column: FooterColumnConfig) => (
+                        <div key={column.id}>
+                          <h4 className="text-xs font-semibold text-white mb-2">
+                            {isRTL ? column.title.ar : column.title.en}
+                          </h4>
+                          <div className="space-y-1">
+                            {column.links.filter(l => l.visible).slice(0, 3).map((link) => (
+                              <div key={link.id} className="text-xs text-slate-400">
+                                {isRTL ? link.label.ar : link.label.en}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="pt-4 border-t border-slate-800">
+                    <p className="text-xs text-slate-500 text-center">
+                      {isRTL ? draftConfig.footer.copyright.ar : draftConfig.footer.copyright.en}
+                    </p>
                   </div>
                 </div>
               </div>
