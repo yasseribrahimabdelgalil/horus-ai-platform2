@@ -1,13 +1,14 @@
 import { useState } from 'react';
-import { Eye, EyeOff, Zap, User, Mail, Lock, CheckCircle2 } from 'lucide-react';
+import { Eye, EyeOff, Zap, User, Mail, Lock, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useAuth, AudienceType } from '../contexts/AuthContext';
 import { Button } from '../components/ui/Button';
 
 interface RegisterProps {
   onNavigate: (page: string) => void;
 }
 
-const accountTypes = [
+const accountTypes: { value: AudienceType; ar: string; en: string }[] = [
   { value: 'company', ar: 'شركة', en: 'Company' },
   { value: 'individual', ar: 'فرد', en: 'Individual' },
   { value: 'blogger', ar: 'مدوّن', en: 'Blogger' },
@@ -23,18 +24,53 @@ const benefits = [
 
 export function Register({ onNavigate }: RegisterProps) {
   const { t, lang, isRTL } = useLanguage();
+  const { register, isLoading: authLoading, error: authError } = useAuth();
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState({ name: '', email: '', password: '', type: 'company' });
+  const [error, setError] = useState<string | null>(null);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [form, setForm] = useState<{
+    name: string;
+    email: string;
+    password: string;
+    type: AudienceType;
+  }>({ name: '', email: '', password: '', type: 'company' });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
+
+    if (!acceptedTerms) {
+      setError(isRTL ? 'يرجى الموافقة على الشروط والأحكام' : 'Please accept the terms and conditions');
+      return;
+    }
+
+    if (form.password.length < 6) {
+      setError(isRTL ? 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' : 'Password must be at least 6 characters');
+      return;
+    }
+
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+
+    const result = await register({
+      name: form.name,
+      email: form.email,
+      password: form.password,
+      audienceType: form.type,
+      acceptedTerms: true,
+    });
+
+    setLoading(false);
+
+    if (result.success) {
       onNavigate('dashboard');
-    }, 1500);
+    } else {
+      setError(result.error || (isRTL ? 'فشل إنشاء الحساب' : 'Registration failed'));
+    }
   };
+
+  const displayError = error || authError;
+  const isSubmitting = loading || authLoading;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-sky-50 flex items-center justify-center px-4 py-16">
@@ -74,6 +110,14 @@ export function Register({ onNavigate }: RegisterProps) {
           </div>
 
           <div className="bg-white rounded-2xl shadow-xl border border-slate-100 p-8 space-y-5">
+            {/* Error message */}
+            {displayError && (
+              <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-100 rounded-xl text-sm text-red-600">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{displayError}</span>
+              </div>
+            )}
+
             <form onSubmit={handleSubmit} className="space-y-5">
               {/* Name */}
               <div className="space-y-1.5">
@@ -85,6 +129,7 @@ export function Register({ onNavigate }: RegisterProps) {
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
                     className={`w-full ${isRTL ? 'pr-10 pl-4' : 'pl-10 pr-4'} py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all`}
                     placeholder={isRTL ? 'محمد أحمد' : 'John Doe'}
+                    disabled={isSubmitting}
                   />
                 </div>
               </div>
@@ -99,6 +144,7 @@ export function Register({ onNavigate }: RegisterProps) {
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
                     className={`w-full ${isRTL ? 'pr-10 pl-4' : 'pl-10 pr-4'} py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all`}
                     placeholder="example@email.com"
+                    disabled={isSubmitting}
                   />
                 </div>
               </div>
@@ -113,11 +159,13 @@ export function Register({ onNavigate }: RegisterProps) {
                     onChange={(e) => setForm({ ...form, password: e.target.value })}
                     className={`w-full ${isRTL ? 'pr-10 pl-10' : 'pl-10 pr-10'} py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all`}
                     placeholder="••••••••"
+                    disabled={isSubmitting}
                   />
                   <button type="button" onClick={() => setShowPass(!showPass)} className={`absolute top-1/2 -translate-y-1/2 ${isRTL ? 'left-3.5' : 'right-3.5'} text-slate-400 hover:text-slate-600`}>
                     {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
+                <p className="text-xs text-slate-400">{isRTL ? '٦ أحرف على الأقل' : 'At least 6 characters'}</p>
               </div>
 
               {/* Account type */}
@@ -129,7 +177,8 @@ export function Register({ onNavigate }: RegisterProps) {
                       key={type.value}
                       type="button"
                       onClick={() => setForm({ ...form, type: type.value })}
-                      className={`py-2.5 px-3 rounded-xl text-sm font-medium border-2 transition-all ${form.type === type.value ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 text-slate-600 hover:border-slate-300'}`}
+                      disabled={isSubmitting}
+                      className={`py-2.5 px-3 rounded-xl text-sm font-medium border-2 transition-all ${form.type === type.value ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 text-slate-600 hover:border-slate-300'} disabled:opacity-50`}
                     >
                       {lang === 'ar' ? type.ar : type.en}
                     </button>
@@ -137,8 +186,25 @@ export function Register({ onNavigate }: RegisterProps) {
                 </div>
               </div>
 
-              <Button type="submit" fullWidth size="lg" disabled={loading}>
-                {loading ? (
+              {/* Terms acceptance */}
+              <div className="flex items-start gap-2">
+                <input
+                  type="checkbox"
+                  id="terms"
+                  checked={acceptedTerms}
+                  onChange={(e) => setAcceptedTerms(e.target.checked)}
+                  className="w-4 h-4 mt-0.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                />
+                <label htmlFor="terms" className="text-xs text-slate-500 leading-relaxed">
+                  {t('register.agree')}{' '}
+                  <button type="button" className="text-blue-600 hover:underline">{t('register.terms')}</button>
+                  {' '}{t('register.and')}{' '}
+                  <button type="button" className="text-blue-600 hover:underline">{t('register.privacy')}</button>
+                </label>
+              </div>
+
+              <Button type="submit" fullWidth size="lg" disabled={isSubmitting}>
+                {isSubmitting ? (
                   <span className="flex items-center gap-2">
                     <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -148,13 +214,6 @@ export function Register({ onNavigate }: RegisterProps) {
                   </span>
                 ) : t('register.submit')}
               </Button>
-
-              <p className="text-xs text-center text-slate-400 leading-relaxed">
-                {t('register.agree')}{' '}
-                <button type="button" className="text-blue-600 hover:underline">{t('register.terms')}</button>
-                {' '}{t('register.and')}{' '}
-                <button type="button" className="text-blue-600 hover:underline">{t('register.privacy')}</button>
-              </p>
             </form>
           </div>
 

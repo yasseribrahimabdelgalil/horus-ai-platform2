@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Eye, EyeOff, Zap, Lock, Mail } from 'lucide-react';
+import { Eye, EyeOff, Zap, Lock, Mail, AlertCircle } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/Button';
 
 interface LoginProps {
@@ -9,18 +10,34 @@ interface LoginProps {
 
 export function Login({ onNavigate }: LoginProps) {
   const { t, isRTL } = useLanguage();
+  const { login, isLoading: authLoading, error: authError } = useAuth();
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState({ email: '', password: '' });
+  const [error, setError] = useState<string | null>(null);
+  const [form, setForm] = useState({ email: '', password: '', rememberMe: false });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+
+    const result = await login({
+      email: form.email,
+      password: form.password,
+      rememberMe: form.rememberMe,
+    });
+
+    setLoading(false);
+
+    if (result.success) {
       onNavigate('dashboard');
-    }, 1500);
+    } else {
+      setError(result.error || (isRTL ? 'فشل تسجيل الدخول' : 'Login failed'));
+    }
   };
+
+  const displayError = error || authError;
+  const isSubmitting = loading || authLoading;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-sky-50 flex items-center justify-center px-4 py-16">
@@ -39,6 +56,14 @@ export function Login({ onNavigate }: LoginProps) {
 
         {/* Card */}
         <div className="bg-white rounded-2xl shadow-xl border border-slate-100 p-8 space-y-5">
+          {/* Error message */}
+          {displayError && (
+            <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-100 rounded-xl text-sm text-red-600">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{displayError}</span>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Email */}
             <div className="space-y-1.5">
@@ -52,6 +77,7 @@ export function Login({ onNavigate }: LoginProps) {
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
                   className={`w-full ${isRTL ? 'pr-10 pl-4' : 'pl-10 pr-4'} py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all`}
                   placeholder={isRTL ? 'example@email.com' : 'example@email.com'}
+                  disabled={isSubmitting}
                 />
               </div>
             </div>
@@ -71,6 +97,7 @@ export function Login({ onNavigate }: LoginProps) {
                   onChange={(e) => setForm({ ...form, password: e.target.value })}
                   className={`w-full ${isRTL ? 'pr-10 pl-10' : 'pl-10 pr-10'} py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all`}
                   placeholder="••••••••"
+                  disabled={isSubmitting}
                 />
                 <button
                   type="button"
@@ -82,8 +109,22 @@ export function Login({ onNavigate }: LoginProps) {
               </div>
             </div>
 
-            <Button type="submit" fullWidth size="lg" disabled={loading}>
-              {loading ? (
+            {/* Remember me */}
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="rememberMe"
+                checked={form.rememberMe}
+                onChange={(e) => setForm({ ...form, rememberMe: e.target.checked })}
+                className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+              />
+              <label htmlFor="rememberMe" className="text-sm text-slate-600">
+                {isRTL ? 'تذكرني' : 'Remember me'}
+              </label>
+            </div>
+
+            <Button type="submit" fullWidth size="lg" disabled={isSubmitting}>
+              {isSubmitting ? (
                 <span className="flex items-center gap-2">
                   <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
